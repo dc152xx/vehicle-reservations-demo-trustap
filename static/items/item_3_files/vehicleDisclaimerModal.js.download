@@ -1,0 +1,26 @@
+"use strict";
+window.addEventListener("DOMContentLoaded", function () {
+    const disclaimerBtns = document.querySelectorAll('[data-target="#ModalPriceStakDisclaimer"]');
+    disclaimerBtns.forEach(btn => {
+        addDisclaimerBtnTagging(btn);
+    });
+    const modal = window.jQuery("#ModalPriceStakDisclaimer");
+    if (modal) {
+        modal.on('show.bs.modal', function (e) {
+            const toggleElem = e.relatedTarget.querySelector('.hidden');
+            if (toggleElem) {
+                modal.find("#priceStakDisclaimerModalText").html(toggleElem.innerHTML);
+            }
+        });
+    }
+});
+function addDisclaimerBtnTagging(btn) {
+    const taggingParentElement = document.querySelector("[data-dotagging-event-owner]");
+    btn.setAttribute("data-dotagging-event", "cta_interaction");
+    btn.setAttribute("data-dotagging-event-action", "click");
+    btn.setAttribute("data-dotagging-event-action-result", "open");
+    btn.setAttribute("data-dotagging-element-order", "0");
+    btn.setAttribute("data-dotagging-element-type", "item_details");
+    btn.setAttribute("data-dotagging-element-subtype", "cta_button");
+}
+//# sourceMappingURL=vehicleDisclaimerModal.js.map

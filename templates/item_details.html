@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ car.title }} | DealerOn Demo</title>
+    
+    <link rel="stylesheet" href="/assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
+
+    <style>
+        body { background-color: #f8f9fa; font-family: system-ui, sans-serif; padding-bottom: 50px; }
+        header { background: #fff; border-bottom: 4px solid #0b2154; padding: 1rem 0; margin-bottom: 1.5rem; }
+        
+        .vdp-main-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; }
+
+        /* Hero Image */
+        .hero-section img { width: 100%; border-radius: 4px; object-fit: contain; background: #fff; }
+
+        /* Thumbnails Container */
+        .thumb-container img { 
+            width: 100%; 
+            border-radius: 4px; 
+            border: 1px solid #dee2e6; 
+            cursor: pointer; 
+            aspect-ratio: 4/3; 
+            object-fit: cover;
+        }
+        .thumb-container img:hover { border-color: #0b2154; }
+
+        /* Info Section */
+        .vehicle-heading { font-size: 1.5rem; font-weight: 800; color: #333; margin-top: 15px; }
+        .price-box { text-align: center; padding: 20px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin: 20px 0; }
+        .price-value { font-size: 2.2rem; font-weight: 900; color: #d81324; display: block; }
+        .best-price-label { font-size: 0.9rem; font-weight: 800; color: #d81324; text-transform: uppercase; }
+
+        /* Buttons */
+        .btn-vdp { font-weight: 700; text-transform: uppercase; padding: 14px; margin-bottom: 12px; border-radius: 6px; display: block; width: 100%; text-decoration: none; text-align: center; }
+        .btn-check { background-color: #0b2154; color: #fff; }
+        .btn-trade { background-color: #1c355e; color: #fff; }
+        .btn-reserve { background-color: #2b5ede; color: #fff; }
+        
+        /* Success Banner */
+        #reserved-banner { display: none; background-color: #198754; color: white; text-align: center; padding: 15px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; }
+
+        /* Desktop Specific Adjustments */
+        @media (min-width: 992px) {
+            .vehicle-heading { margin-top: 0; font-size: 2rem; }
+            .vdp-main-card { padding: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container d-flex justify-content-between align-items-center">
+            <a href="/"><img src="/assets/logo.png" alt="Logo" style="height: 35px;"></a>
+            <a href="/" class="btn btn-sm btn-outline-secondary">← Back</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="reserved-banner" class="animate__animated animate__fadeIn">✓ VEHICLE RESERVED SUCCESSFULLY</div>
+
+        <div class="vdp-main-card">
+            <div class="row g-4">
+                
+                <div class="col-lg-6">
+                    <div class="hero-section">
+                        <img id="mainHero" src="/items/{{ car.folder }}/hero.png" alt="Hero">
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="row">
+                        
+                        <div class="col-12 col-md-4 order-md-1 mb-3">
+                            <div class="row g-2 thumb-container flex-md-column">
+                                <div class="col-4 col-md-12">
+                                    <img src="/items/{{ car.folder }}/thumbnail1.png" onclick="document.getElementById('mainHero').src=this.src">
+                                </div>
+                                <div class="col-4 col-md-12">
+                                    <img src="/items/{{ car.folder }}/thumbnail2.png" onclick="document.getElementById('mainHero').src=this.src">
+                                </div>
+                                <div class="col-4 col-md-12">
+                                    <img src="/items/{{ car.folder }}/thumbnail3.png" onclick="document.getElementById('mainHero').src=this.src">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-md-8 order-md-2">
+                            <h1 class="vehicle-heading">{{ car.title }}</h1>
+                            <p class="text-muted small mb-0">VIN: {{ car.vin }}</p>
+                            <p class="text-muted small">Stock: {{ car.stock }}</p>
+                            
+                            <div class="price-box">
+                                <span class="price-value">{{ car.price }}</span>
+                                <span class="best-price-label">Best Price</span>
+                            </div>
+
+                            <div class="cta-stack">
+                                <a id="reserve-btn" href="/stripe_mock.html?item={{ car.id }}" class="btn-vdp btn-reserve">
+                                    Reserve Now for $350.00
+                                </a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div> </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle the Reservation Success state
+        document.addEventListener("DOMContentLoaded", function() {
+            if (new URLSearchParams(window.location.search).get('reserved') === 'true') {
+                document.getElementById('reserved-banner').style.display = 'block';
+                const btn = document.getElementById('reserve-btn');
+                btn.innerText = "VEHICLE RESERVED";
+                btn.className = "btn-vdp btn-secondary disabled";
+                btn.style.pointerEvents = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

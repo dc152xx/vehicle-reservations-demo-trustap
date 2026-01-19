@@ -1,0 +1,1284 @@
+(async () => {
+  console.log("script loaded");
+  //Define configuration
+  //const API_BASE_URL = 'https://new-gen-api.bannerinsite.com/web-banner/html';
+  const API_BASE_URL = "http://localhost:5500/web-banner/html";
+  const API_RUM_URL = API_BASE_URL.replace(
+    "/web-banner/html",
+    "/analytics/rum"
+  );
+  const SCRIPT_VERSION = "srp_vdp_dealeron_next_gen_v2";
+  const BANNERINSITE_CONFIG = {
+    divId: "bannerInsiteSpecials", // The ID of the div to find
+    divObject: null, // Will hold the div object once found
+    bannerDiv: null, // banner div reference
+    rooftopId: null,
+    findDivIntervalHolder: null, // html div reference
+    findDivInterval: 100, // interval to look for div
+    findDivTimeout: 20000, // timeout to stop looking for div
+    siteUrl: `https://${window.location.host}/`,
+    wasDivFound: false,
+    sentToAPI: false, //flag to know if to send call to API
+    currentUrl: window.location.href, // will hold current url as it changes
+    page: null, // "srp" or "vdp"
+    models: [], //srp models array
+    vin: null, //vdp vin
+    isFetchingData: false,
+    resizeObserver: null,
+    windowResizeHandler: null,
+    device: window.innerWidth <= 600 ? "mobile" : "desktop",
+    carouselTrackObject: null, //div reference
+    carouselNextObject: null, //div reference
+    carouselPrevObject: null, //div reference
+    carouselIndex: 0,
+    carouselTotalItems: 0,
+    carouselWidth: 0,
+    isCarousel: false,
+  };
+
+  const BANNERINSITE_CTA_CONFIG = {
+    //contact modal
+    contactModalObject: null,
+    contactModalFormObject: null,
+    contactModalHeaderDivObject: null,
+    contactModalCloseButtonObject: null,
+    contactModalVin: null,
+    contactModalApiUrl: "https://portal.bannerinsite.com/api",
+    contactModalApiToken:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYXBwIn0.yjxHvIcf95UE-ZCp48boWDQPgT-YE6VKNw4nu5mdvcg",
+
+    //Disclaimer pop modal
+    disclaimerModalObject: null,
+    disclaimerModalCloseRightCornerObject: null,
+    disclaimerModalCloseButtonObject: null,
+    disclaimerModalHeaderObject: null,
+    disclaimerModalContentObject: null,
+  };
+
+  const FALLBACK_DIV_ID = "BANNERINSITE_MAIN_CONTAINER";
+
+  const rumState = {
+    start: performance.now(),
+    cls: 0,
+    sent: false,
+    fetch: null,
+  };
+
+  initClsObserver();
+
+  //Needed so srp redirect can make it to VDP properly.  Each rooftop id maps to a location.  Unique to DEALERON implementation.
+  const BANNERINSITE_REDIRECT_CONFIG = {
+    59: { location: "Derwood", name: "DealerOn Sandbox Honda" },
+    // "34": { "location": "Seattle-WA" },
+    // "35": { "location": "Smyrna" },
+    // "36": { "location": "Lake+Wales" },
+    // "37": { "location": "St+Peters" },
+    // "38": { "location": "Kirkwood" },
+    // "39": { "location": "Saint+Louis" },
+    // "44": { "location": "Fort+Pierce" },
+    // "45": { "location": "Vero+Beach" },
+    // "46": { "location": "Lake+Wales" },
+    // "51": { "location": "Anderson" },
+    // "52": { "location": "Cumming" },
+    // "53": { "location": "Thousand+Oaks" },
+    // "54": { "location": "Thousand+Oaks" }
+  };
+
+  ///////////start the process to find the div and mount banner ///////////////////////
+  try {
+    await findDiv();
+    if (BANNERINSITE_CONFIG.wasDivFound) {
+      await checkUrlAndExtractData();
+      await mountBanner();
+
+      if (BANNERINSITE_CONFIG.page == "srp") {
+        //Check change of url
+        setInterval(async () => {
+          if (location.href !== BANNERINSITE_CONFIG.currentUrl) {
+            await checkUrlAndExtractData();
+            await mountBanner();
+          }
+        }, 200);
+      }
+    } else {
+      console.error(
+        "BANNERINSITE: Main div was not found in the DOM or something went wrong."
+      );
+    }
+  } catch (err) {
+    console.log(err);
+    console.error("Widget failed to load:", err.message);
+    sendRum("widget_error", {
+      error_name: err.name,
+      message: err.message,
+      stack: err.stack,
+    });
+  }
+  ///////////end the process to find the div and mount banner ///////////////////////
+
+  //Finds the div in the DOM, returns a promise that resolves when found or rejects on timeout
+  function findDiv() {
+    return new Promise((resolve, reject) => {
+      let timeoutId = null;
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        observer.disconnect();
+      };
+
+      const resolveMainDiv = () => {
+        let mainDiv = document.getElementById(BANNERINSITE_CONFIG.divId);
+        if (!mainDiv && BANNERINSITE_CONFIG.divId !== FALLBACK_DIV_ID) {
+          mainDiv = document.getElementById(FALLBACK_DIV_ID);
+          if (mainDiv) {
+            BANNERINSITE_CONFIG.divId = FALLBACK_DIV_ID;
+          }
+        }
+        return mainDiv;
+      };
+
+      const setupDiv = (mainDiv) => {
+        if (!BANNERINSITE_CONFIG.wasDivFound) {
+          const containerEl = document.createElement("div");
+          containerEl.innerHTML = getContactModalCode();
+          const containerElDisclaimer = document.createElement("div");
+          containerElDisclaimer.innerHTML = getDisclaimerCode();
+          document.body.appendChild(containerEl);
+          document.body.appendChild(containerElDisclaimer);
+
+          //Make sure divs are available in DOM
+          setTimeout(function () {
+            bannerInsiteContactModalInit();
+            bannerInsiteDisclaimerModalInit();
+          }, 250);
+        }
+
+        mainDiv.style.display = "none";
+        mainDiv.style.width = "100%";
+        mainDiv.style.textAlign = "-webkit-center";
+        mainDiv.style.margin = "0px";
+        BANNERINSITE_CONFIG.divObject = mainDiv;
+        BANNERINSITE_CONFIG.wasDivFound = true;
+        BANNERINSITE_CONFIG.rooftopId = mainDiv.dataset.siteId;
+      };
+
+      // Check immediately first
+      const existing = resolveMainDiv();
+      if (existing) {
+        setupDiv(existing);
+        resolve(existing);
+        return;
+      }
+
+      const observer = new MutationObserver(() => {
+        const mainDiv = resolveMainDiv();
+
+        if (mainDiv) {
+          addScriptsCss();
+
+          //Add a slight delay to ensure any other scripts modifying the div have completed
+          setTimeout(() => {
+            cleanup();
+            setupDiv(mainDiv);
+            resolve(mainDiv);
+          }, 200);
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+
+      // Timeout rejection
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(
+          new Error(
+            `Timed out after ${BANNERINSITE_CONFIG.findDivTimeout}ms waiting for #${BANNERINSITE_CONFIG.divId} to be added to the DOM.`
+          )
+        );
+      }, BANNERINSITE_CONFIG.findDivTimeout);
+    });
+  }
+
+  //Checks the URL and extracts data for SRP or VDP pages
+  async function checkUrlAndExtractData() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const currentUrl = window.location.href;
+        BANNERINSITE_CONFIG.currentUrl = currentUrl;
+        BANNERINSITE_CONFIG.sentToAPI = false;
+
+        const urlObj = new URL(currentUrl);
+        const searchParams = new URLSearchParams(urlObj.search);
+
+        //SRP logic and set page name
+        if (
+          currentUrl.includes("searchall") ||
+          currentUrl.includes("searchnew")
+        ) {
+          const modelTrimValue = searchParams.get("ModelAndTrim");
+          if (!modelTrimValue || modelTrimValue == "") {
+            resolve("No ModelAndTrim"); // let script continue, no error
+            return;
+          }
+
+          BANNERINSITE_CONFIG.page = "srp";
+
+          const modelEntries = modelTrimValue.split("!");
+          BANNERINSITE_CONFIG.models = modelEntries.map(
+            (entry) => entry.split(":")[0]
+          );
+
+          if (BANNERINSITE_CONFIG.models.length > 0) {
+            BANNERINSITE_CONFIG.sentToAPI = true;
+            resolve(true);
+            return;
+          }
+        }
+
+        //VDP logic and set page name
+        const vinMatch = currentUrl.match(/\b[A-HJ-NPR-Z0-9]{17}\b/);
+        if (vinMatch && vinMatch[0]) {
+          //Can not remember why we needed a timeout here, but it was likely needed to ensure DOM was ready.
+          //setTimeout(async () => {
+          let targetDiv = document.querySelector(".bottom-block");
+          let bannerDiv = BANNERINSITE_CONFIG.divObject;
+          if (!targetDiv) {
+            resolve("NO TARGET DIV"); // let script continue, no error
+            return;
+          }
+
+          if (targetDiv && bannerDiv) {
+            BANNERINSITE_CONFIG.page = "vdp";
+            BANNERINSITE_CONFIG.vin = vinMatch[0];
+
+            if (
+              targetDiv.contains(bannerDiv) ||
+              bannerDiv.contains(targetDiv)
+            ) {
+              BANNERINSITE_CONFIG.sentToAPI = true;
+              resolve(true);
+              return;
+            }
+
+            //Moving the banner div to be first child of target div
+            targetDiv.insertBefore(bannerDiv, targetDiv.firstChild);
+            BANNERINSITE_CONFIG.divObject = document.getElementById(
+              BANNERINSITE_CONFIG.divId
+            );
+            BANNERINSITE_CONFIG.sentToAPI = true;
+            resolve(true);
+            return;
+          }
+
+          //}, 250);
+        }
+
+        resolve(true);
+
+        //Testing only
+        // BANNERINSITE_CONFIG.page = "vdp";
+        //BANNERINSITE_CONFIG.vin = "5FPYK3F68TB009486";
+
+        // BANNERINSITE_CONFIG.models.push("HR-V")
+
+        //return;
+        //reject("No path found in url")
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  //Renders the banner by fetching data from API and inserting into div and adds resize observers
+  async function mountBanner() {
+    if (!BANNERINSITE_CONFIG.sentToAPI) return;
+    destroyBanner();
+    BANNERINSITE_CONFIG.isFetchingData = true;
+    const apiResponse = await getBanner();
+    if (apiResponse) {
+      let cleanedString = apiResponse.replace(/\n/g, "").replace(/&#39;/g, "'");
+      BANNERINSITE_CONFIG.divObject.innerHTML = cleanedString;
+      init();
+      sendRum("banner", {
+        duration_ms: Math.round(performance.now() - rumState.start),
+        fetch_duration_ms: rumState.fetch ? rumState.fetch.durationMs : null,
+        status_code: rumState.fetch ? rumState.fetch.statusCode : null,
+        endpoint: rumState.fetch ? rumState.fetch.endpoint : "",
+      });
+    }
+    BANNERINSITE_CONFIG.isFetchingData = false;
+  }
+
+  //utility functions
+
+  function initClsObserver() {
+    try {
+      if (!("PerformanceObserver" in window)) {
+        return;
+      }
+      const observer = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          if (entry.hadRecentInput) {
+            return;
+          }
+          rumState.cls += entry.value || 0;
+        });
+      });
+      observer.observe({ type: "layout-shift", buffered: true });
+    } catch (err) {
+      // Ignore CLS tracking failures.
+    }
+  }
+
+  function getPlatformHint() {
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+      return navigator.userAgentData.platform;
+    }
+    return navigator.platform || "";
+  }
+
+  function sendRum(metric, extra) {
+    try {
+      if (rumState.sent) {
+        return;
+      }
+      rumState.sent = true;
+      const basePayload = {
+        metric: metric,
+        duration_ms: Math.round(performance.now() - rumState.start),
+        site_id: BANNERINSITE_CONFIG.rooftopId
+          ? String(BANNERINSITE_CONFIG.rooftopId)
+          : "",
+        page_url: window.location.href,
+        referrer: document.referrer,
+        is_mobile: BANNERINSITE_CONFIG.device === "mobile",
+        platform_hint: getPlatformHint(),
+        version: SCRIPT_VERSION,
+        cls: Number(rumState.cls.toFixed(5)),
+        connection:
+          navigator.connection && navigator.connection.effectiveType
+            ? navigator.connection.effectiveType
+            : "",
+      };
+
+      const payload = Object.assign(basePayload, extra || {});
+
+      fetch(API_RUM_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(function () {});
+    } catch (err) {
+      // Swallow RUM errors.
+    }
+  }
+  function debounce(fn, delay = 100) {
+    let timer;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  async function getBanner() {
+    try {
+      const query = buildApiQuery();
+      const fetchStart = performance.now();
+      const response = await fetch(`${API_BASE_URL}?${query}`, {
+        method: "GET",
+      });
+
+      rumState.fetch = {
+        durationMs: Math.round(performance.now() - fetchStart),
+        statusCode: response.status,
+        endpoint: response.url,
+      };
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const html = await response.text();
+      return html || false;
+    } catch (err) {
+      console.error("getBanner failed:", err);
+      sendRum("banner_error", {
+        error_name: err.name,
+        message: err.message,
+        stack: err.stack,
+        endpoint: API_BASE_URL,
+      });
+      return false;
+    }
+  }
+
+  function buildApiQuery() {
+    //device=desktop&page=srp&rooftop_id=0d669349-03eb-4542-8d50-6771de0fcc35&model_name=Silverado%201500
+    let params = {};
+    params.device = BANNERINSITE_CONFIG.device;
+    params.page = BANNERINSITE_CONFIG.page;
+    params.legacy_rooftop_id = BANNERINSITE_CONFIG.rooftopId;
+
+    if (BANNERINSITE_CONFIG.page == "srp") {
+      params.model_name = BANNERINSITE_CONFIG.models[0] || ""; //For SRP we only send the first model
+    } else {
+      params.vin = BANNERINSITE_CONFIG.vin || "";
+    }
+
+    const queryString = Object.entries(params)
+      .map(
+        ([key, value]) =>
+          `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
+      )
+      .join("&");
+
+    return queryString;
+  }
+
+  //set up resize observer and handlers
+  function init() {
+    BANNERINSITE_CONFIG.divObject = document.getElementById(
+      BANNERINSITE_CONFIG.divId
+    );
+    BANNERINSITE_CONFIG.bannerDiv =
+      BANNERINSITE_CONFIG.divObject?.querySelector("div") || null;
+
+    if (
+      BANNERINSITE_CONFIG.bannerDiv &&
+      BANNERINSITE_CONFIG.bannerDiv.classList.contains(
+        "srp-carousel-container"
+      )
+    ) {
+      BANNERINSITE_CONFIG.isCarousel = true;
+    }
+
+    if (!BANNERINSITE_CONFIG.divObject || !BANNERINSITE_CONFIG.bannerDiv) {
+      return;
+    }
+
+    rootEl = BANNERINSITE_CONFIG.divObject;
+    if (!rootEl) return;
+
+    setupResponsiveBannerScaling();
+  }
+
+  function addCarouselButtonEvent() {
+    BANNERINSITE_CONFIG.carouselTrackObject =
+      BANNERINSITE_CONFIG.divObject.querySelector(".srp-carousel-track");
+    BANNERINSITE_CONFIG.carouselPrevObject =
+      BANNERINSITE_CONFIG.divObject.querySelector(".srp-carousel-prev");
+    BANNERINSITE_CONFIG.carouselNextObject =
+      BANNERINSITE_CONFIG.divObject.querySelector(".srp-carousel-next");
+
+    // Remove previous listeners first
+    BANNERINSITE_CONFIG.carouselPrevObject.removeEventListener(
+      "click",
+      prevCarousel
+    );
+    BANNERINSITE_CONFIG.carouselNextObject.removeEventListener(
+      "click",
+      nextCarousel
+    );
+
+    BANNERINSITE_CONFIG.carouselPrevObject.addEventListener(
+      "click",
+      prevCarousel
+    );
+
+    BANNERINSITE_CONFIG.carouselNextObject.addEventListener(
+      "click",
+      nextCarousel
+    );
+  }
+
+  function addCtaEvents() {
+    //Get all top level banners in block and search for start of class name
+    const elements = document.querySelectorAll('[class*="bi-mainContainer"]');
+
+    console.log("Event elements", elements);
+
+    if (BANNERINSITE_CONFIG.page == "srp") {
+      elements.forEach((item, index) => {
+        const vin = item.dataset.vin;
+        let itemRedirects = item.querySelectorAll("#bi-mainButton-1");
+        let itemContact = item.querySelectorAll("#bi-mainButton-2");
+        let itemDisclaimers = item.querySelectorAll("#bi-secondaryButton-1");
+        console.log("Event redirect items", itemRedirects);
+        if (BANNERINSITE_CONFIG.page == "srp") {
+          //button 1 redirect remove previous events
+          itemRedirects.forEach((item) => {
+            item.removeEventListener("click", item._redirectHandler);
+          });
+
+          //button 1 redirect add event
+          itemRedirects.forEach((item, index) => {
+            const handler = () => redirect(vin, index);
+            item.addEventListener("click", handler);
+            console.log("Event redirect added", item);
+
+            // Save handler if you need to remove it later
+            item._redirectHandler = handler;
+          });
+
+          //button 2 contact remove previous events
+          itemContact.forEach((item) => {
+            item.removeEventListener("click", item._contactHandler);
+          });
+
+          //button 2 contact add event
+          itemContact.forEach((item, index) => {
+            const handler = () => contact(vin, index);
+            item.addEventListener("click", handler);
+            console.log("Event contact added", item);
+
+            // Save handler if you need to remove it later
+            item._contactHandler = handler;
+          });
+
+          //button 3 disclaimer popup remove previous events
+          itemDisclaimers.forEach((item) => {
+            item.removeEventListener("click", item.__disclaimerPopup);
+          });
+
+          //button 3 disclaimer popup add event
+          itemDisclaimers.forEach((item, index) => {
+            const handler = () => disclaimerModal(vin, index);
+            item.addEventListener("click", handler);
+
+            // Save handler if you need to remove it later
+            item._disclaimerPopup = handler;
+            item.style.cursor = "pointer";
+          });
+        }
+      });
+    }
+  }
+
+  function redirect(vin, index) {
+    const elements = Array.from(
+      BANNERINSITE_CONFIG.bannerDiv.querySelectorAll("*")
+    ).filter((el) =>
+      Array.from(el.classList).some((cls) => cls.startsWith("bi-mainContainer"))
+    );
+
+    elements.forEach((item, indexLoop) => {
+      if (index == indexLoop) {
+        bannerInsiteClick(vin);
+      }
+    });
+  }
+
+  function contact(vin, index) {
+    const elements = Array.from(
+      BANNERINSITE_CONFIG.bannerDiv.querySelectorAll("*")
+    ).filter((el) =>
+      Array.from(el.classList).some((cls) => cls.startsWith("bi-mainContainer"))
+    );
+
+    elements.forEach((item, indexLoop) => {
+      if (index == indexLoop) {
+        let year = item.dataset.vin;
+        let make = item.dataset.make;
+        let model = item.dataset.model;
+        let trim = item.dataset.trim;
+
+        BANNERINSITE_CTA_CONFIG.contactModalVin = vin;
+        BANNERINSITE_CTA_CONFIG.contactModalHeaderDivObject.innerHTML = `${year} ${make} ${model} ${trim}`;
+        BANNERINSITE_CTA_CONFIG.contactModalObject.style.display = "block";
+        document.body.style.overflowY = "hidden";
+      }
+    });
+  }
+
+  function disclaimerModal(vin, index) {
+    const elements = Array.from(
+      BANNERINSITE_CONFIG.bannerDiv.querySelectorAll("*")
+    ).filter((el) =>
+      Array.from(el.classList).some((cls) => cls.startsWith("bi-mainContainer"))
+    );
+
+    elements.forEach((item, indexLoop) => {
+      if (index == indexLoop) {
+        let year = item.dataset.vin;
+        let make = item.dataset.make;
+        let model = item.dataset.model;
+        let trim = item.dataset.trim;
+        let disclaimerText = BANNERINSITE_CONFIG.divObject.querySelector(
+          `#disclaimer-text-vin-${vin}`
+        ).innerHTML;
+        BANNERINSITE_CTA_CONFIG.disclaimerModalHeaderObject.innerHTML = `${year} ${make} ${model} ${trim} <br> VIN:&nbsp;&nbsp;${vin}`;
+        BANNERINSITE_CTA_CONFIG.disclaimerModalContentObject.innerHTML =
+          disclaimerText;
+        BANNERINSITE_CTA_CONFIG.disclaimerModalObject.style.display = "block";
+        document.body.style.overflowY = "hidden";
+      }
+    });
+  }
+
+  function prevCarousel() {
+    if (BANNERINSITE_CONFIG.carouselIndex > 0) {
+      BANNERINSITE_CONFIG.carouselIndex--;
+      updateCarousel();
+    }
+  }
+
+  function nextCarousel() {
+    if (
+      BANNERINSITE_CONFIG.carouselIndex <
+      BANNERINSITE_CONFIG.carouselTotalItems - 1
+    ) {
+      BANNERINSITE_CONFIG.carouselIndex++;
+      updateCarousel();
+    }
+  }
+
+  function updateCarousel() {
+    BANNERINSITE_CONFIG.carouselTrackObject.style.transform =
+      "translateX(-" +
+      BANNERINSITE_CONFIG.carouselIndex * BANNERINSITE_CONFIG.carouselWidth +
+      "px)";
+    BANNERINSITE_CONFIG.carouselPrevObject.disabled =
+      BANNERINSITE_CONFIG.carouselIndex === 0;
+    BANNERINSITE_CONFIG.carouselNextObject.disabled =
+      BANNERINSITE_CONFIG.carouselIndex >=
+      BANNERINSITE_CONFIG.carouselTotalItems - 1;
+  }
+
+  function destroyBanner() {
+    if (BANNERINSITE_CONFIG.resizeObserver) {
+      BANNERINSITE_CONFIG.resizeObserver.disconnect();
+      BANNERINSITE_CONFIG.resizeObserver = null;
+    }
+
+    if (BANNERINSITE_CONFIG.windowResizeHandler) {
+      window.removeEventListener(
+        "resize",
+        BANNERINSITE_CONFIG.windowResizeHandler
+      );
+      BANNERINSITE_CONFIG.windowResizeHandler = null;
+    }
+
+    if (BANNERINSITE_CONFIG.divObject) {
+      BANNERINSITE_CONFIG.divObject.innerHTML = "";
+      rootEl = null;
+    }
+  }
+
+  const setBannerChanges = () => {
+    applyResponsiveBannerScale();
+  };
+
+  function setupResponsiveBannerScaling() {
+    const rootEl = BANNERINSITE_CONFIG.divObject;
+    if (!rootEl) {
+      return;
+    }
+
+    const applyScale = () => applyResponsiveBannerScale();
+
+    if (BANNERINSITE_CONFIG.resizeObserver) {
+      BANNERINSITE_CONFIG.resizeObserver.disconnect();
+    }
+
+    if ("ResizeObserver" in window) {
+      BANNERINSITE_CONFIG.resizeObserver = new ResizeObserver(() => {
+        window.requestAnimationFrame(applyScale);
+      });
+      BANNERINSITE_CONFIG.resizeObserver.observe(rootEl);
+    }
+
+    if (BANNERINSITE_CONFIG.windowResizeHandler) {
+      window.removeEventListener(
+        "resize",
+        BANNERINSITE_CONFIG.windowResizeHandler
+      );
+    }
+
+    BANNERINSITE_CONFIG.windowResizeHandler = () => applyScale();
+    window.addEventListener("resize", BANNERINSITE_CONFIG.windowResizeHandler);
+
+    applyScale();
+  }
+
+  function applyResponsiveBannerScale() {
+    if (!BANNERINSITE_CONFIG.divObject || !BANNERINSITE_CONFIG.bannerDiv) {
+      return;
+    }
+
+    const designSize = getBannerDesignSize();
+    const containerDesignSize = BANNERINSITE_CONFIG.isCarousel
+      ? getCarouselMetrics(designSize)
+      : designSize;
+    const viewportWidth =
+      document.documentElement.clientWidth || window.innerWidth || 0;
+    const containerWidth =
+      BANNERINSITE_CONFIG.divObject.getBoundingClientRect().width ||
+      viewportWidth;
+    const availableWidth = Math.min(
+      viewportWidth || containerWidth,
+      containerWidth
+    );
+    const scale = Math.min(1, availableWidth / containerDesignSize.width);
+    const wrapper = ensureBannerWrapper(
+      BANNERINSITE_CONFIG.bannerDiv,
+      BANNERINSITE_CONFIG.isCarousel
+        ? "bi-carouselScaleWrapper"
+        : "bi-bannerScaleWrapper"
+    );
+
+    wrapper.style.width = `${Math.round(containerDesignSize.width * scale)}px`;
+    wrapper.style.height = `${Math.round(
+      containerDesignSize.height * scale
+    )}px`;
+
+    if (BANNERINSITE_CONFIG.isCarousel) {
+      BANNERINSITE_CONFIG.bannerDiv.style.width = `${containerDesignSize.width}px`;
+      BANNERINSITE_CONFIG.bannerDiv.style.height = `${containerDesignSize.height}px`;
+      BANNERINSITE_CONFIG.bannerDiv.style.transformOrigin = "top left";
+      BANNERINSITE_CONFIG.bannerDiv.style.transform = `scale(${scale})`;
+
+      const items =
+        BANNERINSITE_CONFIG.divObject.querySelectorAll(".srp-carousel-item");
+
+      BANNERINSITE_CONFIG.carouselTotalItems = items.length;
+      BANNERINSITE_CONFIG.carouselWidth = designSize.width;
+      addCarouselButtonEvent();
+    } else {
+      BANNERINSITE_CONFIG.bannerDiv.style.width = `${designSize.width}px`;
+      BANNERINSITE_CONFIG.bannerDiv.style.height = `${designSize.height}px`;
+      BANNERINSITE_CONFIG.bannerDiv.style.transform = `scale(${scale})`;
+      BANNERINSITE_CONFIG.bannerDiv.style.transformOrigin = "top left";
+    }
+
+    addCtaEvents();
+    BANNERINSITE_CONFIG.bannerDiv.style.marginBottom = "0px";
+    BANNERINSITE_CONFIG.divObject.style.display = "block";
+  }
+
+  function getBannerDesignSize() {
+    const defaultSize = { width: 1400, height: 200 };
+    const elements = BANNERINSITE_CONFIG.divObject.querySelectorAll(
+      '[class*="bi-mainContainer"]'
+    );
+    const target = Array.from(elements).find((el) =>
+      Array.from(el.classList).some((cls) =>
+        cls.startsWith("bi-mainContainer-")
+      )
+    );
+    if (!target) {
+      return defaultSize;
+    }
+
+    const className = Array.from(target.classList).find((cls) =>
+      cls.startsWith("bi-mainContainer-")
+    );
+    if (!className) {
+      return defaultSize;
+    }
+
+    const match = className.match(/\bbi-mainContainer-\d+-(\d+)x(\d+)-/);
+    if (!match) {
+      return defaultSize;
+    }
+
+    return {
+      width: parseInt(match[1], 10) || defaultSize.width,
+      height: parseInt(match[2], 10) || defaultSize.height,
+    };
+  }
+
+  function getCarouselMetrics(fallbackSize) {
+    const bannerDiv = BANNERINSITE_CONFIG.bannerDiv;
+    const prevButton = bannerDiv.querySelector(".srp-carousel-prev");
+    const nextButton = bannerDiv.querySelector(".srp-carousel-next");
+    const computedStyle = window.getComputedStyle(bannerDiv);
+    const gap = parseFloat(computedStyle.gap || "0") || 0;
+    const prevWidth = prevButton ? prevButton.offsetWidth : 0;
+    const nextWidth = nextButton ? nextButton.offsetWidth : 0;
+    const prevHeight = prevButton ? prevButton.offsetHeight : 0;
+    const nextHeight = nextButton ? nextButton.offsetHeight : 0;
+
+    const width =
+      fallbackSize.width + prevWidth + nextWidth + gap * 2;
+    const height = Math.max(
+      fallbackSize.height,
+      prevHeight,
+      nextHeight
+    );
+
+    return { width, height };
+  }
+
+  function ensureBannerWrapper(target, className) {
+    if (
+      target.parentElement &&
+      target.parentElement.classList.contains(className)
+    ) {
+      return target.parentElement;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = className;
+    wrapper.style.display = "inline-block";
+    wrapper.style.position = "relative";
+    wrapper.style.flex = "0 0 auto";
+    wrapper.style.overflow = "visible";
+
+    target.parentElement.insertBefore(wrapper, target);
+    wrapper.appendChild(target);
+
+    return wrapper;
+  }
+
+  const addScriptsCss = () => {};
+
+  //Old functions maybe needed later
+
+  function moveOrCloneWidget() {
+    let target = false;
+
+    const all = document.querySelectorAll(".vehicleCallsToAction");
+
+    for (const el of all) {
+      if (isVisible(el)) {
+        target = el; // return the visible one
+      }
+    }
+
+    if (!target || target == null) return null;
+
+    // If cloned widget already exists, return it
+    let existingClone = document.getElementById(
+      "BANNERINSITE_MAIN_CONTAINER_MOBILE"
+    );
+    if (existingClone) {
+      return existingClone;
+    }
+
+    const original = document.getElementById("BANNERINSITE_MAIN_CONTAINER");
+    if (!original) return null; // No original widget to clone
+
+    // Create clone
+    const clone = original.cloneNode(true); // deep clone
+    clone.id = "BANNERINSITE_MAIN_CONTAINER_MOBILE";
+
+    // Append to target div as last child
+    target.prepend(clone);
+    clone.style.order = "-999";
+
+    return clone;
+  }
+
+  //CTA redirect to VDP page - uses vin instead of UUID
+  function bannerInsiteClick(vin) {
+    let redirectFound = false;
+    let redirect = "";
+    //sendTracking('click', vin);
+
+    //BANNER_REDIRECT.forEach(element => {
+    // if(element.vin == vin){
+    // let make = String(element.make);
+    // make = make.replace(/-/g, " ");
+    // let model = element.model;
+    // model = model.replace(/-/g, "_");
+
+    let host = window.location.host;
+    //redirect = `https://${host}/new-${BANNERINSITE_REDIRECT_CONFIG[BANNERINSITE_CONFIG.siteId].location}-${element.year}-${make}-${model}--${vin}`;
+    redirect = `https://${host}/new-${
+      BANNERINSITE_REDIRECT_CONFIG[BANNERINSITE_CONFIG.rooftopId].location
+    }-----${vin}`;
+    redirectFound = true;
+
+    // }
+
+    // })
+
+    if (redirectFound) {
+      //sendTracking('click', vin);
+      window.location.href = redirect;
+    }
+  }
+
+  function getContactModalCode() {
+    return `
+                <div id="bannerinsite-myModal" class="bannerinsite-modal">
+
+                <!-- Modal content -->
+                <div class="bannerinsite-modal-content">
+                    <span class="bannerinsite-close" id="bannerinsite-closeModalBtn">&times;</span>
+                    <h2 class="mb-2">Vehicle Inquiry</h2>
+                    <p id="bannerinsite-subheader" class="bannerinsite-subheader"></p>
+                    <form id="bannerinsite-myForm">
+                        <div class="bannerinsite-form-row">
+                            <div class="bannerinsite-col-md-6">
+                                <div class="bannerinsite-form-group">
+                                    <label for="bannerinsite-firstName" class="bannerinsite-label">First Name:</label>
+                                    <input type="text" class="bannerinsite-form-control" id="bannerinsite-firstName" name="bannerinsite-firstName" required>
+                                </div>
+                            </div>
+                            <div class="bannerinsite-col-md-6">
+                                <div class="bannerinsite-form-group">
+                                    <label for="bannerinsite-lastName" class="bannerinsite-label">Last Name:</label>
+                                    <input type="text" class="bannerinsite-form-control" id="bannerinsite-lastName" name="bannerinsite-lastName" required>
+                                </div>
+                            </div>
+                        </div>
+            
+                        <div class="bannerinsite-form-row">
+                            <div class="bannerinsite-col-md-6">
+                                <div class="bannerinsite-form-group">
+                                    <label for="bannerinsite-email" class="bannerinsite-label">Email:</label>
+                                    <input type="email" class="bannerinsite-form-control" id="bannerinsite-email" name="bannerinsite-email" required>
+                                </div>
+                            </div>
+                            <div class="bannerinsite-col-md-6">
+                                <div class="bannerinsite-form-group">
+                                    <label for="bannerinsite-phone" class="bannerinsite-label">Phone: <span class="bannerinsite-msg">*numbers only</span></label>
+                                    <input type="number" class="bannerinsite-form-control" id="bannerinsite-phone" maxlength="10" minlength="10" name="bannerinsite-phone" required>
+                                </div>
+                            </div>
+                        </div>
+            
+                        <div class="bannerinsite-form-group">
+                            <label for="bannerinsite-comments" class="bannerinsite-label">Comments:</label>
+                            <textarea class="bannerinsite-form-control" id="bannerinsite-comments" name="bannerinsite-comments" rows="4" required></textarea>
+                        </div>
+            
+                        <div id="bannerinsiteSuccessAlert" class="bannerinsite-success-alert">
+                            Success! You will be contacted soon.
+                        </div>
+            
+                        <div id="bannerinsiteErrorAlert" class="bannerinsite-error-alert">
+                            Error! The lead was not processed. Please try again.
+                        </div>
+            
+                        <button id="bannerinsiteSubmitModal" type="submit" class="bannerinsite-btn-primary">Contact Dealership</button>
+                    </form>
+                </div>
+            
+            </div>
+            
+        
+            
+            <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            
+            /* The Modal (background) */
+            .bannerinsite-modal {
+                display: none; /* Hidden by default */
+                position: fixed; /* Stay in place */
+                z-index: 9999999; /* Sit on top */
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto; /* Enable scroll if needed */
+                background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+                
+                
+            }
+
+
+            
+            /* Modal Content/Box */
+            .bannerinsite-modal-content {
+                background-color: #fefefe;
+                margin: 10% auto;
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%;
+                max-width: 600px;
+                border-radius: 8px;
+                text-align: center;
+            }
+            
+            /* Close Button */
+            .bannerinsite-close {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            
+            .bannerinsite-close:hover,
+            .bannerinsite-close:focus {
+                color: black;
+                text-decoration: none;
+            }
+            
+            /* Custom Form Styles */
+            .bannerinsite-form-group {
+                margin-bottom: 20px;
+            }
+            
+            .bannerinsite-label {
+                font-weight: bold;
+            }
+            
+            .bannerinsite-form-control {
+                width: 100%;
+                padding: 10px;
+                font-size: 16px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-sizing: border-box;
+                margin-top: 8px;
+            }
+            
+            .bannerinsite-form-row {
+                display: flex;
+                margin-right: -15px;
+                margin-left: -15px;
+            }
+            
+            .bannerinsite-col-md-6 {
+                flex: 0 0 45%;
+                max-width: 50%;
+                padding-right: 15px;
+                padding-left: 15px;
+            }
+            
+            @media (max-width: 400px) {
+                .bannerinsite-col-md-6 {
+                    flex: 0 0 100%;
+                    max-width: 100%;
+                    padding-right: 15px;
+                    padding-left: 15px;
+                }
+            }
+            
+            .bannerinsite-subheader {
+                text-align: center;
+                font-size: 16px;
+                color: #777;
+            }
+            
+            .bannerinsite-btn-primary {
+                background-color: #636363;
+                color: #fff;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+            
+            .bannerinsite-btn-primary:hover {
+                transform: scale(1.2);
+            }
+            
+            .bannerinsite-msg {
+                color: #f14343;
+                font-size: small;
+                font-weight: 500;
+            
+            }
+            
+            .bannerinsite-success-alert {
+                background-color: #319949;
+                color: white;
+                padding: 15px;
+                font-weight: 700;
+                border: 1px solid #c3e6cb;
+                border-radius: 4px;
+                text-align: center;
+                margin: 10px;
+                display: none;
+            }
+            
+            .bannerinsite-error-alert {
+                background-color: #f14343;
+                color: white;
+                padding: 15px;
+                font-weight: 700;
+                border: 1px solid #c3e6cb;
+                border-radius: 4px;
+                text-align: center;
+                margin: 10px;
+                display: none;
+            }
+            </style>
+                `;
+  }
+
+  //Modal and lead form UI
+  function getDisclaimerCode() {
+    return `
+            <div id="bannerinsite-myModalDisclaimer" class="bannerinsite-modal">
+
+            <!-- Modal content -->
+            <div class="bannerinsite-modal-content">
+                <span class="bannerinsite-close" id="bannerinsite-closeModalBtnDisclaimer">&times;</span>
+                
+                <h2 class="mb-2">Offer Details and Disclaimer</h2>
+                <p id="bannerinsite-subheader-disclaimer" class="bannerinsite-subheader"></p>
+                <div id="bannerinsiteDisclaimerContent"></div>   
+                <button id="bannerinsiteDisclaimerButton" class="bannerinsite-btn-primary-disclaimer">CLOSE</button>
+            
+            </div>
+        
+        </div>
+
+        <style>
+        #bannerinsiteDisclaimerContent{
+            padding: 0px 20px 20px 20px;
+            font-size: 15px;
+        }
+
+        .bannerinsite-btn-primary-disclaimer {
+            background-color: #636363;
+            color: #fff;
+            padding: 5px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        </style>
+
+        `;
+  }
+
+  //Form submit function
+  function bannerInsiteContactModalInit() {
+    BANNERINSITE_CTA_CONFIG.contactModalObject = document.getElementById(
+      "bannerinsite-myModal"
+    );
+    var formError = document.getElementById("bannerinsiteErrorAlert");
+    var formSuccess = document.getElementById("bannerinsiteSuccessAlert");
+    BANNERINSITE_CTA_CONFIG.contactModalFormSubmitButtonObject =
+      document.getElementById("bannerinsiteSubmitModal");
+    BANNERINSITE_CTA_CONFIG.contactModalHeaderDivObject =
+      document.getElementById("bannerinsite-subheader");
+
+    // Get the <span> element that closes the modal
+    BANNERINSITE_CTA_CONFIG.contactModalCloseButtonObject =
+      document.getElementById("bannerinsite-closeModalBtn");
+
+    // When the user clicks on <span> (x), close the modal
+    BANNERINSITE_CTA_CONFIG.contactModalCloseButtonObject.onclick =
+      function () {
+        document.body.style.overflowY = "scroll";
+        BANNERINSITE_CTA_CONFIG.contactModalObject.style.display = "none";
+        BANNERINSITE_CTA_CONFIG.contactModalFormSubmitButtonObject.style.display =
+          "inline";
+        formError.style.display = "none";
+        formSuccess.style.display = "none";
+      };
+
+    // Form lead submit
+    BANNERINSITE_CTA_CONFIG.contactModalFormObject = document.getElementById(
+      "bannerinsite-myForm"
+    );
+    BANNERINSITE_CTA_CONFIG.contactModalFormObject.addEventListener(
+      "submit",
+      submitContactForm
+    );
+
+    async function submitContactForm(event) {
+      event.preventDefault();
+      BANNERINSITE_CTA_CONFIG.contactModalFormSubmitButtonObject.style.display =
+        "none";
+      formError.style.display = "none";
+      formSuccess.style.display = "none";
+
+      var firstName = event.target.elements["bannerinsite-firstName"].value;
+      var lastName = event.target.elements["bannerinsite-lastName"].value;
+      var email = event.target.elements["bannerinsite-email"].value;
+      var phone = parseInt(event.target.elements["bannerinsite-phone"].value);
+      var comments = event.target.elements["bannerinsite-comments"].value;
+
+      var data = {
+        firstname: firstName,
+        lastname: lastName,
+        email: email,
+        phone: parseInt(phone),
+        comments: comments,
+        vin: BANNERINSITE_CTA_CONFIG.contactModalVin,
+        site_id: parseInt(BANNERINSITE_CONFIG.rooftopId),
+      };
+
+      const response = await fetch(
+        `${BANNERINSITE_CTA_CONFIG.contactModalApiUrl}/widget-dealer-lead`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${BANNERINSITE_CTA_CONFIG.contactModalApiToken}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+
+      if (response.status == 200) {
+        formSuccess.style.display = "block";
+        //sendTracking("contact", BANNER_CURRENT_LEAD_VIN);
+        setTimeout(() => {
+          formSuccess.style.display = "none";
+          document.body.style.overflowY = "scroll";
+          BANNERINSITE_CTA_CONFIG.contactModalObject.style.display = "none";
+          event.target.elements["bannerinsite-firstName"].value = "";
+          event.target.elements["bannerinsite-lastName"].value = "";
+          event.target.elements["bannerinsite-email"].value = "";
+          event.target.elements["bannerinsite-phone"].value = "";
+          event.target.elements["bannerinsite-comments"].value = "";
+          BANNERINSITE_CTA_CONFIG.contactModalFormSubmitButtonObject.style.display =
+            "inline";
+        }, 3000);
+      } else {
+        formError.style.display = "block";
+        BANNERINSITE_CTA_CONFIG.contactModalFormSubmitButtonObject.style.display =
+          "inline";
+      }
+    }
+
+    var numericField = document.getElementById("bannerinsite-phone");
+
+    // Set the maximum length you want to allow
+    var maxLength = 10; // Change this value as needed
+
+    // Add an input event listener to monitor changes in the input field
+    numericField.addEventListener("input", function () {
+      // Trim the value to the specified maximum length
+      var trimmedValue = numericField.value.slice(0, maxLength);
+
+      // Update the input field with the trimmed value
+      numericField.value = trimmedValue;
+    });
+  }
+
+  function bannerInsiteDisclaimerModalInit() {
+    BANNERINSITE_CTA_CONFIG.disclaimerModalObject = document.getElementById(
+      "bannerinsite-myModalDisclaimer"
+    );
+    BANNERINSITE_CTA_CONFIG.disclaimerModalCloseRightCornerObject =
+      document.getElementById("bannerinsite-closeModalBtnDisclaimer");
+    BANNERINSITE_CTA_CONFIG.disclaimerModalHeaderObject =
+      document.getElementById("bannerinsite-subheader-disclaimer");
+    BANNERINSITE_CTA_CONFIG.disclaimerModalContentObject =
+      document.getElementById("bannerinsiteDisclaimerContent");
+    BANNERINSITE_CTA_CONFIG.disclaimerModalCloseButtonObject =
+      document.getElementById("bannerinsiteDisclaimerButton");
+
+    BANNERINSITE_CTA_CONFIG.disclaimerModalCloseRightCornerObject.onclick =
+      function () {
+        document.body.style.overflowY = "scroll";
+        BANNERINSITE_CTA_CONFIG.disclaimerModalObject.style.display = "none";
+      };
+
+    BANNERINSITE_CTA_CONFIG.disclaimerModalCloseButtonObject.onclick =
+      function () {
+        document.body.style.overflowY = "scroll";
+        BANNERINSITE_CTA_CONFIG.disclaimerModalObject.style.display = "none";
+      };
+  }
+})();

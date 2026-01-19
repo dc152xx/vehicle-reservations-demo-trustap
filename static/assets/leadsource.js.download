@@ -1,0 +1,9 @@
+"use strict";
+function GetLeadSource() {
+    if (window.ePriceModal) {
+        return window.ePriceModal.getLeadSource();
+    }
+    console.warn("GetLeadSource() was called, but ePriceModal has not loaded yet.");
+    return null;
+}
+//# sourceMappingURL=leadsource.js.map

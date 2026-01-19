@@ -1,0 +1,66 @@
+[
+    {
+        "id": 1,
+        "title": "2025 Hyundai IONIQ 6 Limited",
+        "vin": "KMHM...3695",
+        "stock": "0A103695",
+        "price": "$34,295",
+        "folder": "item_1_files"
+    },
+    {
+        "id": 2,
+        "title": "2025 Volkswagen Atlas SE",
+        "vin": "1V2H...9624",
+        "stock": "L19499",
+        "price": "$34,580",
+        "folder": "item_2_files"
+    },
+    {
+        "id": 3,
+        "title": "2025 Ford Bronco Base",
+        "vin": "1FMD...9780",
+        "stock": "N11344",
+        "price": "$38,990",
+        "folder": "item_3_files"
+    },
+    {
+        "id": 4,
+        "title": "2025 Ford F-150 STX",
+        "vin": "1FTE...7638",
+        "stock": "33918A",
+        "price": "$39,995",
+        "folder": "item_4_files"
+    },
+    {
+        "id": 5,
+        "title": "2025 Honda HR-V Sport",
+        "vin": "3CZR...7698",
+        "stock": "21258B",
+        "price": "$26,387",
+        "folder": "item_5_files"
+    },
+    {
+        "id": 6,
+        "title": "2025 VW Atlas (Silver)",
+        "vin": "1V2H...8235",
+        "stock": "19389",
+        "price": "$31,650",
+        "folder": "item_6_files"
+    },
+    {
+        "id": 7,
+        "title": "2025 Honda Civic Sport",
+        "vin": "2HGF...5114",
+        "stock": "SH5251",
+        "price": "$23,710",
+        "folder": "item_7_files"
+    },
+    {
+        "id": 8,
+        "title": "2025 VW Atlas R-Line",
+        "vin": "1V2F...4237",
+        "stock": "19510",
+        "price": "$43,200",
+        "folder": "item_8_files"
+    }
+]

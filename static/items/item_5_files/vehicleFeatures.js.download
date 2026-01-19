@@ -1,0 +1,76 @@
+"use strict";
+class FeaturesTabs {
+    constructor(rootSelector) {
+        this._tabsScroll = {
+            isMouseDown: false,
+            isScrolling: false,
+            x1: 0,
+            x2: 0
+        };
+        this._rootSelector = rootSelector;
+        this.getElements();
+        this.addListeners(this, 'mouse');
+        this.addListeners(this, 'touch');
+    }
+    getElements() {
+        const tabLinkSelector = `${this._rootSelector} .features-tab__link`;
+        this._tabsElement = document.querySelector(`${this._rootSelector} .features-tabs`);
+        this._tabs = document.querySelectorAll(tabLinkSelector);
+    }
+    addListeners(tabs, eventType) {
+        var _a;
+        const startEvent = eventType === 'mouse' ? 'mousedown' : 'touchstart';
+        const moveEvent = eventType === 'mouse' ? 'mousemove' : 'touchmove';
+        const endEvent = eventType === 'mouse' ? 'mouseup' : 'touchend';
+        (_a = tabs._tabsElement) === null || _a === void 0 ? void 0 : _a.addEventListener(startEvent, function (event) {
+            tabs.startScrollTabs(event);
+        });
+        window.addEventListener(moveEvent, function (event) {
+            tabs.scrollTabs(event);
+        });
+        window.addEventListener(endEvent, function (event) {
+            tabs.stopScrollTabs(event);
+        });
+    }
+    startScrollTabs(event) {
+        if (event instanceof MouseEvent) {
+            event.preventDefault();
+        }
+        this._tabsScroll.isMouseDown = true;
+        this._tabsScroll.x1 = this.findScrollX(event);
+    }
+    scrollTabs(event) {
+        if (this._tabsScroll.isMouseDown && !this._tabsScroll.isScrolling) {
+            this._tabsScroll.isScrolling = true;
+            return;
+        }
+        if (this._tabsScroll.isScrolling) {
+            this._tabsScroll.x2 = this._tabsScroll.x1;
+            this._tabsScroll.x1 = this.findScrollX(event);
+            let differenceX = this._tabsScroll.x1 - this._tabsScroll.x2;
+            this._tabsElement.scrollLeft -= differenceX;
+        }
+    }
+    stopScrollTabs(event) {
+        if (this._tabsScroll.isScrolling) {
+            this._tabsScroll.isMouseDown = false;
+            this._tabsScroll.isScrolling = false;
+        }
+    }
+    findScrollX(event) {
+        const isIE11 = !!window.MSInputMethodContext && !!document['documentMode'];
+        if (event instanceof TouchEvent) {
+            const touchX = event.changedTouches[0].clientX;
+            return touchX;
+        }
+        else if (event instanceof MouseEvent) {
+            const mouseX = isIE11 ? event.screenX : event.pageX;
+            return mouseX;
+        }
+    }
+}
+window.addEventListener('DOMContentLoaded', function () {
+    const tabs = new FeaturesTabs('#details-panel__body--features');
+    const tabsMobile = new FeaturesTabs('#details-panel__body--features-mobile');
+});
+//# sourceMappingURL=vehicleFeatures.js.map
