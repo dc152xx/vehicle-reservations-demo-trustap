@@ -39,6 +39,15 @@
         .btn-trade { background-color: #1c355e; color: #fff; }
         .btn-reserve { background-color: #2b5ede; color: #fff; }
         
+        /* Add this to your CSS in item_details.html */
+        .btn-reserved-state {
+            background-color: #ffffff !important;   /* White background */
+            border: 2px solid #2b5ede !important;   /* Blue Outline */
+            color: #2b5ede !important;              /* Blue Text */
+            pointer-events: none;                   /* Prevent clicking */
+            opacity: 1 !important;                  /* Keep it fully visible (not faded) */
+        }
+
         /* Success Banner */
         #reserved-banner { display: none; background-color: #198754; color: white; text-align: center; padding: 15px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; }
 
@@ -116,7 +125,7 @@
                 document.getElementById('reserved-banner').style.display = 'block';
                 const btn = document.getElementById('reserve-btn');
                 btn.innerText = "VEHICLE RESERVED";
-                btn.className = "btn-vdp btn-secondary disabled";
+                btn.className = "btn-vdp btn-reserved-state"; // Use our new custom class
                 btn.style.pointerEvents = 'none';
             }
         });
