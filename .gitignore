@@ -2,3 +2,4 @@ leads.csv
 venv/
 __pycache__/
 static/items/old/
+todolist.txt
