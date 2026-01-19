@@ -45,7 +45,19 @@ def send_item_files(path):
 # ROUTE: Stripe Mock
 @app.route('/stripe_mock.html')
 def stripe_mock():
-    return send_from_directory('static', 'stripe_mock.html')
+    # 1. Get the item ID from the URL (e.g. ?item=1)
+    item_id = request.args.get('item', type=int)
+    
+    # 2. Load data and find the specific car
+    vehicles = load_data()
+    car = next((c for c in vehicles if c['id'] == item_id), None)
+    
+    # 3. If car exists, render the template with the car data
+    if car:
+        return render_template('stripe_mock.html', car=car)
+    
+    # Fallback if no ID is provided
+    return "Vehicle Not Found", 404
 
 # ROUTE: API Handle Reserve
 @app.route('/api/reserve', methods=['POST'])
