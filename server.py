@@ -95,7 +95,7 @@ def reserve():
         print(f"Pardot Error: {e}")
 
     # 3. REDIRECT USER (Your existing code)
-    return redirect(f'/items/item_details.html?reserved=true')
+    return redirect(f'/items/item_{item_id}.html?reserved=true')
 
 if __name__ == '__main__':
     # '0.0.0.0' tells Flask to accept connections from any device on your network
