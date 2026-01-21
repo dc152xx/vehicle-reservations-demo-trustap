@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from flask import Flask, render_template, request, redirect, send_from_directory
 
 # This ensures PythonAnywhere knows exactly where your folders are
@@ -61,10 +62,40 @@ def stripe_mock():
 
 # ROUTE: API Handle Reserve
 @app.route('/api/reserve', methods=['POST'])
-def handle_reserve():
+def reserve():
+    email = request.form.get('email')
     item_id = request.form.get('item_id')
-    # Add your CSV logging here if needed
-    return redirect(f'/items/item_{item_id}.html?reserved=true')
+    
+    # 1. LOG TO LOCAL CSV (Your existing code)
+    csv_path = os.path.join(static_folder, 'leads.csv')
+    try:
+        with open(csv_path, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([item_id, email, datetime.now()])
+    except Exception as e:
+        print(f"CSV Error: {e}")
+
+    # 2. SEND TO PARDOT (The new part)
+    # Replace this URL with your actual Pardot Form Handler URL
+    pardot_url = "http://go.trustap.com/l/1105011/2026-01-20/964py2" 
+    
+    try:
+        # We send the data to Pardot using the same field names they expect
+        payload = {
+            'email': email,
+            # If you mapped other fields in Pardot (like 'vehicle_interest'), add them here:
+            # 'vehicle_interest': item_id 
+        }
+        # Send the POST request efficiently with a short timeout
+        requests.post(pardot_url, data=payload, timeout=2)
+        print(f"Sent {email} to Pardot")
+        
+    except Exception as e:
+        # We catch errors so the user flow NEVER breaks even if Pardot is down
+        print(f"Pardot Error: {e}")
+
+    # 3. REDIRECT USER (Your existing code)
+    return redirect(f'/items/item_details.html?reserved=true')
 
 if __name__ == '__main__':
     # '0.0.0.0' tells Flask to accept connections from any device on your network
