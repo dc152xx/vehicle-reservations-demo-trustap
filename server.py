@@ -66,35 +66,32 @@ def reserve():
     email = request.form.get('email')
     item_id = request.form.get('item_id')
     
-    # 1. LOG TO LOCAL CSV (Your existing code)
-    csv_path = os.path.join(static_folder, 'leads.csv')
+    # 1. LOG TO LOCAL CSV
+    # (Keeps a safe backup on your server)
     try:
+        csv_path = os.path.join(static_folder, 'leads.csv')
         with open(csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([item_id, email, datetime.now()])
     except Exception as e:
         print(f"CSV Error: {e}")
 
-    # 2. SEND TO PARDOT (The new part)
-    # Replace this URL with your actual Pardot Form Handler URL
-    pardot_url = "http://go.trustap.com/l/1105011/2026-01-20/964py2" 
+    # 2. SEND TO PARDOT (Silent Background Post)
+    # The URL from your form handler details
+    pardot_url = "http://go.trustap.com/l/1105011/2026-01-20/964py2"
     
     try:
-        # We send the data to Pardot using the same field names they expect
-        payload = {
-            'email': email,
-            # If you mapped other fields in Pardot (like 'vehicle_interest'), add them here:
-            # 'vehicle_interest': item_id 
-        }
-        # Send the POST request efficiently with a short timeout
-        requests.post(pardot_url, data=payload, timeout=2)
-        print(f"Sent {email} to Pardot")
-        
+        # We send the email to Pardot
+        # timeout=2 ensures your site doesn't hang if Pardot is slow
+        requests.post(pardot_url, data={'email': email}, timeout=2)
+        print(f"Sent {email} to Pardot successfully.")
     except Exception as e:
-        # We catch errors so the user flow NEVER breaks even if Pardot is down
+        # If Pardot fails, we just log it and continue so the user isn't stuck
         print(f"Pardot Error: {e}")
 
-    # 3. REDIRECT USER (Your existing code)
+    # 3. REDIRECT USER
+    # We send them back to the specific vehicle page they were looking at.
+    # IMPORTANT: Ensure this route matches the one you use to view cars (e.g., /vehicle/1 or /items/item_1.html)
     return redirect(f'/items/item_{item_id}.html?reserved=true')
 
 if __name__ == '__main__':
