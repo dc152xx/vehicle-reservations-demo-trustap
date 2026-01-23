@@ -45,9 +45,9 @@ def send_assets(path):
 def send_item_files(path):
     return send_from_directory('static/items', path)
 
-# ROUTE: Stripe Mock
-@app.route('/stripe_mock.html')
-def stripe_mock():
+# ROUTE: Actions Page Mock
+@app.route('/actions_mock.html')
+def actions_mock():
     # 1. Get the item ID from the URL (e.g. ?item=1)
     item_id = request.args.get('item', type=int)
     
@@ -57,7 +57,7 @@ def stripe_mock():
     
     # 3. If car exists, render the template with the car data
     if car:
-        return render_template('stripe_mock.html', car=car)
+        return render_template('actions_mock.html', car=car)
     
     # Fallback if no ID is provided
     return "Vehicle Not Found", 404
