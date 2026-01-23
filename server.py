@@ -71,7 +71,7 @@ def reserve():
     # 1. LOG TO LOCAL CSV
     # (Keeps a safe backup on your server)
     try:
-        csv_path = os.path.join(static_folder, 'leads.csv')
+        csv_path = os.path.join(current_dir, 'leads.csv')
         with open(csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([email, datetime.now()])
@@ -86,7 +86,6 @@ def reserve():
         # We send the email to Pardot
         # timeout=2 ensures your site doesn't hang if Pardot is slow
         requests.post(pardot_url, data={'email': email}, timeout=2)
-        print(f"Sent {email} to Pardot successfully.")
     except Exception as e:
         # If Pardot fails, we just log it and continue so the user isn't stuck
         print(f"Pardot Error: {e}")
