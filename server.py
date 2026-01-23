@@ -79,15 +79,18 @@ def reserve():
         print(f"CSV Error: {e}")
 
     # 2. SEND TO PARDOT (Silent Background Post)
-    # The URL from your form handler details
     pardot_url = "http://go.trustap.com/l/1105011/2026-01-20/964py2"
     
+    # Define headers to mimic a real Chrome browser (Critical for Pardot)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
     try:
-        # We send the email to Pardot
-        # timeout=2 ensures your site doesn't hang if Pardot is slow
-        requests.post(pardot_url, data={'email': email}, timeout=2)
+        # Pass 'headers=headers' to the request
+        requests.post(pardot_url, data={'email': email}, headers=headers, timeout=2)
+        print(f"Sent {email} to Pardot successfully.")
     except Exception as e:
-        # If Pardot fails, we just log it and continue so the user isn't stuck
         print(f"Pardot Error: {e}")
 
     # 3. REDIRECT USER
