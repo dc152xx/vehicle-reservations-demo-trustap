@@ -13,8 +13,8 @@
         .checkout-card { border: none; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); overflow: hidden; background: #fff; }
         .card-header { background-color: #0b2154; color: white; padding: 20px; text-align: center; font-weight: 700; font-size: 1.25rem; border-bottom: none; }
         .test-banner { background-color: #fff3cd; color: #856404; padding: 10px; text-align: center; font-size: 0.9rem; border-bottom: 1px solid #ffeeba; font-weight: 600; }
-        .btn-pay { background-color: #d81324; border: none; font-weight: 700; text-transform: uppercase; padding: 15px; font-size: 1rem; border-radius: 6px; color: #fff; width: 100%; margin-top: 10px; }
-        .btn-pay:hover { background-color: #b00f1c; color: #fff; }
+        .btn-pay { background-color: #2b5ede; border: none; font-weight: 700; text-transform: uppercase; padding: 15px; font-size: 1rem; border-radius: 6px; color: #fff; width: 100%; margin-top: 10px; }
+        .btn-pay:hover { background-color: #1a45b8; color: #fff; }
     </style>
 </head>
 <body>
@@ -52,8 +52,8 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-bold text-secondary">Payment Details (Mock)</label>
-                                <input type="text" class="form-control bg-light mb-2" placeholder="4242 4242 4242 4242" disabled>
+                                <label class="form-label fw-bold text-secondary">Demo Payment Details</label>
+                                <input type="text" class="form-control bg-light mb-2" placeholder="**** **** **** 1234" disabled>
                                 <div class="row g-2">
                                     <div class="col"><input type="text" class="form-control bg-light" placeholder="MM / YY" disabled></div>
                                     <div class="col"><input type="text" class="form-control bg-light" placeholder="CVC" disabled></div>
@@ -70,5 +70,32 @@
             </div>
         </div>
     </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.querySelector('form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+
+        form.addEventListener('submit', function(e) {
+            // 1. Stop the form from sending immediately
+            e.preventDefault();
+
+            // 2. Change the UI to show "working" state
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+            submitBtn.style.opacity = "0.7";
+            submitBtn.style.cursor = "wait";
+            submitBtn.disabled = true; // Prevent double-clicking
+
+            // 3. Wait for 2 seconds (2000 milliseconds) then submit
+            setTimeout(function() {
+                form.submit(); 
+            }, 1000);
+        });
+    });
+</script>
+
+
+
+
 </body>
 </html>
