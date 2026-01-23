@@ -72,7 +72,7 @@ def reserve():
         csv_path = os.path.join(static_folder, 'leads.csv')
         with open(csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([item_id, email, datetime.now()])
+            writer.writerow([email, datetime.now()])
     except Exception as e:
         print(f"CSV Error: {e}")
 
