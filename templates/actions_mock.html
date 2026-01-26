@@ -4,26 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Reservation | DealerOn Demo</title>
-    
     <link rel="stylesheet" href="/assets/bootstrap-5.3.8-dist/css/bootstrap.min.css">
-
-    <style>
-        body { background-color: #f8f9fa; font-family: system-ui, -apple-system, sans-serif; }
-        header { background: #fff; border-bottom: 4px solid #0b2154; padding: 1rem 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 3rem; }
-        .checkout-card { border: none; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); overflow: hidden; background: #fff; }
-        .card-header { background-color: #0b2154; color: white; padding: 20px; text-align: center; font-weight: 700; font-size: 1.25rem; border-bottom: none; }
-        .test-banner { background-color: #fff3cd; color: #856404; padding: 10px; text-align: center; font-size: 0.9rem; border-bottom: 1px solid #ffeeba; font-weight: 600; }
-        .btn-pay { background-color: #2b5ede; border: none; font-weight: 700; text-transform: uppercase; padding: 15px; font-size: 1rem; border-radius: 6px; color: #fff; width: 100%; margin-top: 10px; }
-        .btn-pay:hover { background-color: #1a45b8; color: #fff; }
-    </style>
+    <link rel="stylesheet" href="/static/custom.css">
 </head>
 <body>
 
     <header>
         <div class="container d-flex justify-content-center">
-            <a href="/">
-                <img src="/assets/logo.png" alt="OnMarketplace" style="height: 40px;">
-            </a>
+            <a href="/"><img src="/assets/logo.png" alt="OnMarketplace" style="height: 40px;"></a>
         </div>
     </header>
 
@@ -32,25 +20,21 @@
             <div class="col-md-6 col-lg-5">
                 <div class="checkout-card">
                     <div class="test-banner">TEST MODE: No real payment will be processed.</div>
-                    <div class="card-header">Complete Reservation</div>
+                    <div class="checkout-header">Complete Reservation</div>
                     <div class="card-body p-4">
                         
                         <div class="text-center mb-4">
                             <h5 class="text-muted mb-2">Reserve Vehicle</h5>
-                            
                             <h3 class="fw-bold">{{ car.title }}</h3>
-                            
                             <div class="badge bg-success fs-6 mt-2">Deposit: $350.00</div>
                         </div>
 
                         <form action="/api/reserve" method="POST">
                             <input type="hidden" name="item_id" value="{{ car.id }}">
-
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-bold text-secondary">Email Address</label>
                                 <input type="email" class="form-control" name="email" placeholder="name@example.com" required>
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-secondary">Demo Payment Details</label>
                                 <input type="text" class="form-control bg-light mb-2" placeholder="**** **** **** 1234" disabled>
@@ -60,7 +44,8 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn btn-pay">Pay & Reserve Now</button>
+                            <button type="submit" class="btn-primary-brand mt-2">Pay & Reserve Now</button>
+                            
                             <div class="text-center mt-3">
                                 <a href="javascript:history.back()" class="text-decoration-none text-muted small">Cancel Transaction</a>
                             </div>
@@ -71,31 +56,27 @@
         </div>
     </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.querySelector('form');
-        const submitBtn = form.querySelector('button[type="submit"]');
+    <footer class="site-footer">
+        <div class="container"> 
+            <div class="footer-text">Trustap Ltd 2026</div>
+            <div class="footer-subtext">☘️ Born in Ireland, Trusted Worldwide 🌍</div>
+        </div>
+    </footer>
 
-        form.addEventListener('submit', function(e) {
-            // 1. Stop the form from sending immediately
-            e.preventDefault();
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector('form');
+            const submitBtn = form.querySelector('button[type="submit"]');
 
-            // 2. Change the UI to show "working" state
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-            submitBtn.style.opacity = "0.7";
-            submitBtn.style.cursor = "wait";
-            submitBtn.disabled = true; // Prevent double-clicking
-
-            // 3. Wait for 2 seconds (2000 milliseconds) then submit
-            setTimeout(function() {
-                form.submit(); 
-            }, 1000);
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                submitBtn.style.opacity = "0.7";
+                submitBtn.style.cursor = "wait";
+                submitBtn.disabled = true; 
+                setTimeout(function() { form.submit(); }, 1000);
+            });
         });
-    });
-</script>
-
-
-
-
+    </script>
 </body>
 </html>

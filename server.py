@@ -2,102 +2,117 @@ import os
 import json
 import requests
 import csv
+import logging
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, send_from_directory
+import random
+from flask import Flask, session, render_template, request, redirect, send_from_directory
 
-# This ensures PythonAnywhere knows exactly where your folders are
+# 1. SETUP LOGGING (Standard Python Logging)
+# This ensures logs appear in your PythonAnywhere Error Log
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logger = logging.getLogger()
+
+# 2. SETUP APP & FOLDERS
 current_dir = os.path.dirname(os.path.abspath(__file__))
 template_folder = os.path.join(current_dir, 'templates')
 static_folder = os.path.join(current_dir, 'static')
 
-app = Flask(__name__, 
-            template_folder=template_folder, 
-            static_folder=static_folder)
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
-# When loading your JSON, use the full path
+# CRITICAL: Secret key required for Session memory (Golden Car logic)
+app.secret_key = 'super_secret_nada_demo_key'
+
+# HELPER: Load Vehicle Data
 def load_data():
     json_path = os.path.join(static_folder, 'vehicles.json')
     with open(json_path) as f:
         return json.load(f)
 
-# ROUTE: Homepage / Search Results
+# ROUTE 1: Homepage (Sets the Golden Car)
 @app.route('/')
 def index():
     vehicles = load_data()
+    
+    # A. Pick a random number (1-8)
+    winner_id = random.randint(1, 8)
+    
+    # B. Save it to the User's Session (Server Memory)
+    session['golden_car_id'] = winner_id
+    
+    # C. Log it so you can see it in the PythonAnywhere Server Log
+    logger.info(f"🎰 NEW SESSION START: The Golden Car is #{winner_id}")
+    
+    # D. Render the page
     return render_template('index.html', vehicles=vehicles)
 
-# ROUTE: Dynamic Vehicle Detail Page
+# ROUTE 2: Vehicle Detail Page (Checks for Golden Car)
 @app.route('/items/item_<int:car_id>.html')
 def item_detail(car_id):
     vehicles = load_data()
     car = next((c for c in vehicles if c['id'] == car_id), None)
+    
+    # A. Check if this car is the winner stored in the session
+    is_winner = False
+    if 'golden_car_id' in session:
+        # Compare current ID with the one stored in session
+        if session['golden_car_id'] == car_id:
+            is_winner = True
+            logger.info(f"🎉 WINNER FOUND! User is looking at Golden Car #{car_id}")
+    
     if car:
-        return render_template('item_details.html', car=car)
+        # Pass 'is_winner' to the template
+        return render_template('item_details.html', car=car, is_winner=is_winner)
+    
     return "Vehicle Not Found", 404
 
-# ROUTE: Global Assets (CSS/Logo)
-@app.route('/assets/<path:path>')
-def send_assets(path):
-    return send_from_directory('static/assets', path)
-
-# ROUTE: Vehicle-specific files (Images)
-@app.route('/items/<path:path>')
-def send_item_files(path):
-    return send_from_directory('static/items', path)
-
-# ROUTE: Actions Page Mock
-@app.route('/actions_mock.html')
-def actions_mock():
-    # 1. Get the item ID from the URL (e.g. ?item=1)
-    item_id = request.args.get('item', type=int)
-    
-    # 2. Load data and find the specific car
-    vehicles = load_data()
-    car = next((c for c in vehicles if c['id'] == item_id), None)
-    
-    # 3. If car exists, render the template with the car data
-    if car:
-        return render_template('actions_mock.html', car=car)
-    
-    # Fallback if no ID is provided
-    return "Vehicle Not Found", 404
-
-# ROUTE: API Handle Reserve
+# ROUTE 3: Handle Reservation (Pardot + CSV)
 @app.route('/api/reserve', methods=['POST'])
 def reserve():
     email = request.form.get('email')
     item_id = request.form.get('item_id')
     
-    # 1. LOG TO LOCAL CSV
-    # (Keeps a safe backup on your server)
+    # A. LOG TO LOCAL CSV
     try:
         csv_path = os.path.join(current_dir, 'leads.csv')
         with open(csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([email, datetime.now()])
     except Exception as e:
-        print(f"CSV Error: {e}")
+        logger.error(f"CSV Error: {e}")
 
-    # 2. SEND TO PARDOT (Silent Background Post)
+    # B. SEND TO PARDOT
     pardot_url = "http://go.trustap.com/l/1105011/2026-01-20/964py2"
-    
-    # Define headers to mimic a real Chrome browser (Critical for Pardot)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
     
     try:
-        # Pass 'headers=headers' to the request
         requests.post(pardot_url, data={'email': email}, headers=headers, timeout=2)
-        print(f"Sent {email} to Pardot successfully.")
+        logger.info(f"Sent {email} to Pardot successfully.")
     except Exception as e:
-        print(f"Pardot Error: {e}")
+        logger.error(f"Pardot Error: {e}")
 
-    # 3. REDIRECT USER
-    # We send them back to the specific vehicle page they were looking at.
-    # IMPORTANT: Ensure this route matches the one you use to view cars (e.g., /vehicle/1 or /items/item_1.html)
+    # C. REDIRECT USER
     return redirect(f'/items/item_{item_id}.html?reserved=true')
 
+# --- SUPPORT ROUTES ---
+
+@app.route('/assets/<path:path>')
+def send_assets(path):
+    return send_from_directory('static/assets', path)
+
+@app.route('/items/<path:path>')
+def send_item_files(path):
+    return send_from_directory('static/items', path)
+
+@app.route('/actions_mock.html')
+def actions_mock():
+    item_id = request.args.get('item', type=int)
+    vehicles = load_data()
+    car = next((c for c in vehicles if c['id'] == item_id), None)
+    if car:
+        return render_template('actions_mock.html', car=car)
+    return "Vehicle Not Found", 404
+
 if __name__ == '__main__':
-    # '0.0.0.0' tells Flask to accept connections from any device on your network
     app.run(host='0.0.0.0', port=8000, debug=True)
