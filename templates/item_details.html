@@ -86,20 +86,44 @@
     </div>
 
     <div id="winnerModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content winner-content">
-            <span class="close-btn" onclick="closeWinnerModal()">&times;</span>
-            <div style="font-size: 50px; margin-bottom: 10px;">🏆</div>
-            <h3 class="modal-title" style="color: #856404; font-size: 28px;">CONGRATULATIONS!</h3>
-            <p style="font-size: 18px; color: #555; line-height: 1.5;">You have found the <strong>Golden</strong> vehicle!</p>
-            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin: 20px 0; color: #856404;">
-                <strong>Special Bonus Unlocked:</strong><br>
-                This reservation includes a $50 Amazon Gift Card! See a member of the Trustap team to claim your prize.
+    <div class="modal-content winner-content">
+        <span class="close-btn" onclick="closeWinnerModal()">&times;</span>
+        
+        <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">🏆</div>
+        
+        <h3 class="modal-title" style="color: #856404; font-size: 32px; margin-bottom: 5px;">CONGRATULATIONS!</h3>
+        
+        <p style="font-size: 18px; color: #555; margin-bottom: 25px;">
+            You have found the <strong>Golden Vehicle</strong>!
+        </p>
+        
+        <div style="background: #fff9e6; padding: 25px; border-radius: 12px; border: 2px dashed #ffeeba; margin-bottom: 25px; text-align: center;">
+            <h5 style="color: #856404; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; margin-bottom: 15px; font-weight: 700;">
+                Special Bonus Unlocked
+            </h5>
+
+            <div style="margin-bottom: 10px;">
+                <span style="font-size: 28px; font-weight: 800; color: #d81324; display: block;">$50</span>
+                <span style="font-size: 16px; color: #856404; font-weight: 600;">Amazon Gift Card</span>
             </div>
-            <button onclick="closeWinnerModal()" class="btn-primary-brand" style="background-color: #ffd700; color: #856404; border: 1px solid #e0c520;">
-                Awesome, I'll take it!
-            </button>
+
+            <div style="font-size: 12px; color: #bba570; margin: 10px 0; font-weight: 700;">— OR —</div>
+
+            <div>
+                <span style="font-size: 28px; font-weight: 800; color: #2949CE; display: block;">$125 Value</span>
+                <span style="font-size: 16px; color: #856404; font-weight: 600;">1 Free Month of Trustap Vehicle Reservations</span>
+            </div>
         </div>
+
+        <button onclick="closeWinnerModal()" class="btn-primary-brand" style="background-color: #ffd700; color: #856404; border: none; font-size: 18px; padding: 15px;">
+            Awesome, I'll take it!
+        </button>
+        
+        <p style="font-size: 12px; color: #999; margin-top: 15px; margin-bottom: 0;">
+            See a Trustap team member to claim your prize. <br> Terms and conditions apply.
+        </p>
     </div>
+</div>
 
     <footer class="site-footer">
         <div class="container"> 
