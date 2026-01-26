@@ -37,7 +37,7 @@ def load_data():
         return json.load(f)
 
 # ROUTE 1: Homepage (Sets the Golden Car)
-@@app.route('/')
+@app.route('/')
 def index():
     vehicles = load_data()
     
