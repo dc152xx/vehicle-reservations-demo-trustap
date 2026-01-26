@@ -19,8 +19,15 @@ static_folder = os.path.join(current_dir, 'static')
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
-# CRITICAL: Secret key required for Session memory (Golden Car logic)
+app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+
+# CRITICAL: Secret key required for Session memory
 app.secret_key = 'super_secret_nada_demo_key'
+
+# --- NEW: ALLOW SESSIONS IN IFRAME ---
+# These settings tell the browser to allow the cookie even when embedded on another site
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True  # Required if SameSite is None'
 
 # HELPER: Load Vehicle Data
 def load_data():
