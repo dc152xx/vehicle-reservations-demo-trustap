@@ -74,24 +74,53 @@
     </footer>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const modal = document.getElementById('missionModal');
-            const navigationEntries = performance.getEntriesByType("navigation");
+    document.addEventListener("DOMContentLoaded", function() {
+        const modal = document.getElementById('missionModal');
+        
+        // 1. Get Navigation Type
+        const navigationEntries = performance.getEntriesByType("navigation");
+        const navType = navigationEntries.length > 0 ? navigationEntries[0].type : '';
+
+        // 2. Check Referrer (Where did we come from?)
+        // If the referrer URL contains our own domain (pythonanywhere.com), it's an internal click.
+        // If the referrer is the parent page (trustap.com) or empty, it's a fresh entry.
+        const referrer = document.referrer;
+        const currentDomain = window.location.hostname; // e.g., "dcr5000.pythonanywhere.com"
+        const isInternalNav = referrer.includes(currentDomain);
+
+        console.log("Nav Type:", navType);
+        console.log("Referrer:", referrer);
+        console.log("Internal?", isInternalNav);
+
+        // --- THE LOGIC ---
+        
+        // CASE A: Back Button (ALWAYS HIDE)
+        if (navType === 'back_forward') {
+            console.log("Back button used. Keeping modal hidden.");
+            // Do nothing (modal is hidden by default in CSS)
+        }
+        
+        // CASE B: Refresh OR Fresh Entry from Outside (SHOW)
+        // If we reloaded explicitly OR we navigated here from a different domain (like the parent iframe refresh)
+        else if (navType === 'reload' || (navType === 'navigate' && !isInternalNav)) {
+            console.log("Fresh Start detected. Showing Mission.");
+            modal.style.display = 'flex';
             
-            if (navigationEntries.length > 0) {
-                const navType = navigationEntries[0].type;
-                if (navType === 'reload') {
-                    modal.style.display = 'flex';
-                    sessionStorage.setItem('missionSeen', 'true');
-                } else if (navType === 'navigate') {
-                    if (!sessionStorage.getItem('missionSeen')) {
-                        modal.style.display = 'flex';
-                        sessionStorage.setItem('missionSeen', 'true');
-                    }
-                }
-            }
-        });
-        function closeMission() { document.getElementById('missionModal').style.display = 'none'; }
-    </script>
+            // We can clear the 'seen' flag if you want the "Golden Car" to reset too
+            sessionStorage.removeItem('missionSeen'); 
+        }
+        
+        // CASE C: Internal Navigation (Home Button / Logo) (HIDE)
+        else {
+            console.log("Internal navigation detected. Keeping modal hidden.");
+        }
+    });
+
+    function closeMission() {
+        document.getElementById('missionModal').style.display = 'none';
+        // Optional: Set a flag if you need it for other logic later
+        sessionStorage.setItem('missionSeen', 'true');
+    }
+</script>
 </body>
 </html>
