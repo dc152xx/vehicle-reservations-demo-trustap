@@ -3,6 +3,7 @@ import json
 import requests
 import csv
 import logging
+import time
 from datetime import datetime
 import random
 from flask import Flask, session, render_template, request, redirect, send_from_directory
@@ -36,20 +37,27 @@ def load_data():
         return json.load(f)
 
 # ROUTE 1: Homepage (Sets the Golden Car)
-@app.route('/')
+@@app.route('/')
 def index():
     vehicles = load_data()
     
-    # A. Pick a random number (1-8)
-    winner_id = random.randint(1, 8)
+    # 1. Get current time
+    now = time.time()
     
-    # B. Save it to the User's Session (Server Memory)
-    session['golden_car_id'] = winner_id
+    # 2. Check if we recently picked a winner (within last 5 seconds)
+    last_gen_time = session.get('last_gen_time', 0)
     
-    # C. Log it so you can see it in the PythonAnywhere Server Log
-    logger.info(f"🎰 NEW SESSION START: The Golden Car is #{winner_id}")
+    if (now - last_gen_time) < 5:
+        # A. TOO SOON: Keep the existing winner
+        winner_id = session.get('golden_car_id', 1)
+        logger.info(f"♻️ DUPLICATE DETECTED: Keeping Golden Car #{winner_id} (Request within 5s)")
+    else:
+        # B. FRESH START: Pick a new winner
+        winner_id = random.randint(1, 8)
+        session['golden_car_id'] = winner_id
+        session['last_gen_time'] = now
+        logger.info(f"🎰 NEW SESSION START: The Golden Car is #{winner_id}")
     
-    # D. Render the page
     return render_template('index.html', vehicles=vehicles)
 
 # ROUTE 2: Vehicle Detail Page (Checks for Golden Car)
