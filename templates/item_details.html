@@ -85,45 +85,47 @@
         </div>
     </div>
 
+    {% if hidden_car_game %}
     <div id="winnerModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content winner-content">
-        <span class="close-btn" onclick="closeWinnerModal()">&times;</span>
-        
-        <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">🏆</div>
-        
-        <h3 class="modal-title" style="color: #856404; font-size: 32px; margin-bottom: 5px;">CONGRATULATIONS!</h3>
-        
-        <p style="font-size: 18px; color: #555; margin-bottom: 25px;">
-            You have found the <strong>Golden Vehicle</strong>!
-        </p>
-        
-        <div style="background: #fff9e6; padding: 25px; border-radius: 12px; border: 2px dashed #ffeeba; margin-bottom: 25px; text-align: center;">
-            <h5 style="color: #856404; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; margin-bottom: 15px; font-weight: 700;">
-                Special Bonus Unlocked
-            </h5>
+        <div class="modal-content winner-content">
+            <span class="close-btn" onclick="closeWinnerModal()">&times;</span>
+            
+            <div style="font-size: 60px; margin-bottom: 10px; animation: bounce 2s infinite;">🏆</div>
+            
+            <h3 class="modal-title" style="color: #856404; font-size: 32px; margin-bottom: 5px;">CONGRATULATIONS!</h3>
+            
+            <p style="font-size: 18px; color: #555; margin-bottom: 25px;">
+                You have found the <strong>Golden Vehicle</strong>!
+            </p>
+            
+            <div style="background: #fff9e6; padding: 25px; border-radius: 12px; border: 2px dashed #ffeeba; margin-bottom: 25px; text-align: center;">
+                <h5 style="color: #856404; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; margin-bottom: 15px; font-weight: 700;">
+                    Special Bonus Unlocked
+                </h5>
 
-            <div style="margin-bottom: 10px;">
-                <span style="font-size: 28px; font-weight: 800; color: #d81324; display: block;">$500</span>
-                <span style="font-size: 16px; color: #856404; font-weight: 600;">Enter a drawing for a $500 Gift Card</span>
+                <div style="margin-bottom: 10px;">
+                    <span style="font-size: 28px; font-weight: 800; color: #d81324; display: block;">$500</span>
+                    <span style="font-size: 16px; color: #856404; font-weight: 600;">Enter a drawing for a $500 Gift Card</span>
+                </div>
+
+                <div style="font-size: 12px; color: #bba570; margin: 10px 0; font-weight: 700;">— OR —</div>
+
+                <div>
+                    <span style="font-size: 28px; font-weight: 800; color: #2949CE; display: block;">$225 Value</span>
+                    <span style="font-size: 16px; color: #856404; font-weight: 600;">50% off first 3 Months of Trustap Vehicle Reservations</span>
+                </div>
             </div>
 
-            <div style="font-size: 12px; color: #bba570; margin: 10px 0; font-weight: 700;">— OR —</div>
-
-            <div>
-                <span style="font-size: 28px; font-weight: 800; color: #2949CE; display: block;">$225 Value</span>
-                <span style="font-size: 16px; color: #856404; font-weight: 600;">50% off first 3 Months of Trustap Vehicle Reservations</span>
-            </div>
+            <button onclick="closeWinnerModal()" class="btn-primary-brand" style="background-color: #ffd700; color: #856404; border: none; font-size: 18px; padding: 15px;">
+                Awesome, I'll take it!
+            </button>
+            
+            <p style="font-size: 12px; color: #999; margin-top: 15px; margin-bottom: 0;">
+                See a Trustap team member to claim your prize. <br> Terms and conditions apply.
+            </p>
         </div>
-
-        <button onclick="closeWinnerModal()" class="btn-primary-brand" style="background-color: #ffd700; color: #856404; border: none; font-size: 18px; padding: 15px;">
-            Awesome, I'll take it!
-        </button>
-        
-        <p style="font-size: 12px; color: #999; margin-top: 15px; margin-bottom: 0;">
-            See a Trustap team member to claim your prize. <br> Terms and conditions apply.
-        </p>
     </div>
-</div>
+    {% endif %}
 
     <footer class="site-footer">
         <div class="container"> 
@@ -134,6 +136,7 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // FIX: Using string comparison so VS Code/Linters don't break
             const isWinner = "{{ 'true' if is_winner else 'false' }}" === "true";
             const isReserved = new URLSearchParams(window.location.search).get('reserved') === 'true';
 
@@ -144,9 +147,16 @@
                     btn.className = "btn-primary-brand btn-reserved-state"; 
                 }
 
+                // Only show winner modal if isWinner is true AND the modal exists (feature flag on)
                 if (isWinner) {
                     const winnerModal = document.getElementById('winnerModal');
-                    if (winnerModal) setTimeout(() => { winnerModal.style.display = 'flex'; }, 500);
+                    if (winnerModal) {
+                        setTimeout(() => { winnerModal.style.display = 'flex'; }, 500);
+                    } else {
+                        // If game is off or error, just show the banner
+                        const banner = document.getElementById('reserved-banner');
+                        if (banner) banner.style.display = 'block';
+                    }
                 } else {
                     const banner = document.getElementById('reserved-banner');
                     if (banner) banner.style.display = 'block';
@@ -167,15 +177,20 @@
             }
 
             window.closeModal = function() { if (reservationModal) reservationModal.style.display = 'none'; }
+            
             window.closeWinnerModal = function() { 
                 const winnerModal = document.getElementById('winnerModal');
                 if (winnerModal) winnerModal.style.display = 'none';
+                
+                // Ensure banner shows after closing winner box
                 const banner = document.getElementById('reserved-banner');
                 if (banner) banner.style.display = 'block';
             }
+            
             window.onclick = function(event) {
+                const winnerModal = document.getElementById('winnerModal');
                 if (event.target == reservationModal) closeModal();
-                if (event.target == document.getElementById('winnerModal')) closeWinnerModal();
+                if (winnerModal && event.target == winnerModal) closeWinnerModal();
             }
         });
     </script>

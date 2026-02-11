@@ -11,7 +11,7 @@
 
     <header>
         <div class="container d-flex justify-content-between align-items-center">
-            <a href="#"><img src="/assets/logo.png" alt="Logo" style="height: 40px;"></a>
+            <a href="/"><img src="/assets/logo.png" alt="Logo" style="height: 40px;"></a>
             <div class="d-none d-md-flex gap-4">
                 <a href="#" class="text-dark text-decoration-none fw-bold">New</a>
                 <a href="#" class="text-dark text-decoration-none fw-bold">Used</a>
@@ -50,6 +50,7 @@
         </div>
     </div>
 
+    {% if hidden_car_game %}
     <div id="missionModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-btn" onclick="closeMission()">&times;</span>
@@ -66,13 +67,6 @@
         </div>
     </div>
 
-    <footer class="site-footer">
-        <div class="container"> 
-            <div class="footer-text">Trustap Ltd 2026</div>
-            <div class="footer-subtext">☘️ Born in Ireland, Trusted Worldwide 🌍</div>
-        </div>
-    </footer>
-
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         const modal = document.getElementById('missionModal');
@@ -81,11 +75,9 @@
         const navigationEntries = performance.getEntriesByType("navigation");
         const navType = navigationEntries.length > 0 ? navigationEntries[0].type : '';
 
-        // 2. Check Referrer (Where did we come from?)
-        // If the referrer URL contains our own domain (pythonanywhere.com), it's an internal click.
-        // If the referrer is the parent page (trustap.com) or empty, it's a fresh entry.
+        // 2. Check Referrer
         const referrer = document.referrer;
-        const currentDomain = window.location.hostname; // e.g., "dcr5000.pythonanywhere.com"
+        const currentDomain = window.location.hostname; 
         const isInternalNav = referrer.includes(currentDomain);
 
         console.log("Nav Type:", navType);
@@ -97,20 +89,16 @@
         // CASE A: Back Button (ALWAYS HIDE)
         if (navType === 'back_forward') {
             console.log("Back button used. Keeping modal hidden.");
-            // Do nothing (modal is hidden by default in CSS)
         }
         
         // CASE B: Refresh OR Fresh Entry from Outside (SHOW)
-        // If we reloaded explicitly OR we navigated here from a different domain (like the parent iframe refresh)
         else if (navType === 'reload' || (navType === 'navigate' && !isInternalNav)) {
             console.log("Fresh Start detected. Showing Mission.");
-            modal.style.display = 'flex';
-            
-            // We can clear the 'seen' flag if you want the "Golden Car" to reset too
+            if(modal) modal.style.display = 'flex';
             sessionStorage.removeItem('missionSeen'); 
         }
         
-        // CASE C: Internal Navigation (Home Button / Logo) (HIDE)
+        // CASE C: Internal Navigation (HIDE)
         else {
             console.log("Internal navigation detected. Keeping modal hidden.");
         }
@@ -118,9 +106,17 @@
 
     function closeMission() {
         document.getElementById('missionModal').style.display = 'none';
-        // Optional: Set a flag if you need it for other logic later
         sessionStorage.setItem('missionSeen', 'true');
     }
-</script>
+    </script>
+    {% endif %}
+
+    <footer class="site-footer">
+        <div class="container"> 
+            <div class="footer-text">Trustap Ltd 2026</div>
+            <div class="footer-subtext">☘️ Born in Ireland, Trusted Worldwide 🌍</div>
+        </div>
+    </footer>
+
 </body>
 </html>
