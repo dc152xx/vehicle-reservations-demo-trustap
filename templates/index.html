@@ -50,19 +50,31 @@
         </div>
     </div>
 
-    {% if hidden_car_game %}
     <div id="missionModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-btn" onclick="closeMission()">&times;</span>
-            <div class="mission-icon">🕵️</div>
-            <h2 class="mission-title">Welcome to the Trustap NADA Demo</h2>
-            <p class="mission-body">
-                Feel free to explore the inventory. We have hidden a special 
-                <strong>"Golden Car"</strong> with a unique reward.
-                <br><br>
-                Try to find it and complete the reservation process to see the 
-                Trustap integration in action.
-            </p>
+            
+            {% if hidden_car_game %}
+                <div class="mission-icon">🕵️</div>
+                <h2 class="mission-title">Welcome to the Trustap NADA Demo</h2>
+                <p class="mission-body">
+                    Feel free to explore the inventory. We have hidden a special 
+                    <strong>"Golden Car"</strong> with a unique reward.
+                    <br><br>
+                    Try to find it and complete the reservation process to see the 
+                    Trustap integration in action.
+                </p>
+            {% else %}
+                <div class="mission-icon">🚗</div>
+                <h2 class="mission-title">Welcome to the Trustap Vehicle Reservation Demo</h2>
+                <p class="mission-body">
+                    Feel free to explore the inventory.
+                    <br><br>
+                    Complete the reservation process to see the 
+                    Trustap integration in action.
+                </p>
+            {% endif %}
+
             <button onclick="closeMission()" class="btn-primary-brand">Start Browsing</button>
         </div>
     </div>
@@ -109,7 +121,6 @@
         sessionStorage.setItem('missionSeen', 'true');
     }
     </script>
-    {% endif %}
 
     <footer class="site-footer">
         <div class="container"> 
