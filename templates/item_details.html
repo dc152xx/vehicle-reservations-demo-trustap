@@ -127,6 +127,144 @@
     </div>
     {% endif %}
 
+    <div id="dealerEmailModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; padding-bottom: 0; z-index: 10001;">
+    
+    <div class="phone-frame animate__animated animate__slideInUp">
+        <div class="phone-notch"></div>
+        
+        <div class="email-header">
+            <div class="phone-status-bar">
+                <span>9:41</span>
+                <span style="float: right;">📶 🔋</span>
+            </div>
+            <div class="app-nav">
+                <span style="color: #007AFF;">‹ Inbox</span>
+                <span style="font-weight: 600;">Dealership</span>
+                <span style="color: #007AFF;">Edit</span>
+            </div>
+        </div>
+
+        <div class="email-body">
+            <div class="email-meta">
+                <h3 class="email-subject">New reservation on {{ car.title }}</h3>
+                <div class="email-from">
+                    <div class="sender-avatar">T</div>
+                    <div class="sender-info">
+                        <strong>Trustap Notifications</strong>
+                        <span class="text-muted">To: Dealership</span>
+                    </div>
+                    <div class="email-time">Now</div>
+                </div>
+            </div>
+
+            <div class="email-content">
+                <p>You have received a new reservation on <strong>{{ car.title }}</strong> ({{ car.vin }}).</p>
+                
+                <div style="background: #f5f5f7; padding: 15px; border-radius: 8px; margin: 15px 0; font-size: 14px;">
+                    <strong>Customer contact information:</strong><br><br>
+                    Name: Bert Grey<br>
+                    Email: <span id="customer-email-display">bert.grey@example.com</span><br>
+                    Phone: +1 212-555-1234
+                </div>
+
+                <p>Please accept or decline the deposit here or by visiting your transactions page.</p>
+
+                <a href="#" class="btn-email-action">Accept Deposit</a>
+                <a href="#" class="btn-email-secondary">Decline Reservation</a>
+                
+                <div class="email-footer">
+                    Trustap Ltd 2026
+                </div>
+            </div>
+        </div>
+
+        <div class="home-indicator"></div>
+        
+        <button onclick="closeDealerModal()" class="btn-close-phone">&times;</button>
+        </div>
+    </div>
+
+    <style>
+    /* PHONE STYLES - FLOATING CENTER VERSION */
+    .phone-frame {
+        width: 100%; 
+        max-width: 375px; 
+        
+        /* FIX: Dynamic height that fits the screen */
+        height: 750px; 
+        max-height: 85vh; 
+        
+        background: #fff; 
+        
+        /* FIX: Round all corners to look like a floating phone */
+        border-radius: 50px; 
+        
+        position: relative; 
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        font-family: -apple-system, sans-serif;
+        
+        /* FIX: Full bezel on all sides */
+        border: 8px solid #111; 
+    }
+
+    .phone-notch {
+        position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+        width: 150px; height: 25px; background: #111;
+        border-radius: 0 0 20px 20px; z-index: 10;
+    }
+
+    .email-header { background: #f9f9f9; padding: 10px 20px; padding-top: 35px; border-bottom: 1px solid #e5e5e5; }
+    .phone-status-bar { font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #333; }
+    .app-nav { display: flex; justify-content: space-between; font-size: 16px; color: #007AFF; }
+    
+    .email-body { 
+        padding: 0; 
+        overflow-y: auto; 
+        /* FIX: Adjust scrollable area to account for header/footer */
+        height: calc(100% - 80px); 
+    }
+    
+    .email-meta { padding: 20px; border-bottom: 1px solid #eee; }
+    .email-subject { font-size: 18px; font-weight: 700; margin: 0 0 10px 0; line-height: 1.2; }
+    .email-from { display: flex; align-items: center; gap: 12px; }
+    .sender-avatar { width: 36px; height: 36px; background: #2949CE; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .sender-info { display: flex; flex-direction: column; font-size: 14px; }
+    .email-time { margin-left: auto; font-size: 12px; color: #999; }
+    .email-content { padding: 20px; font-size: 15px; line-height: 1.5; color: #333; }
+    
+    .btn-email-action { 
+        display: block; width: 100%; background: #2949CE; color: #fff; 
+        text-align: center; padding: 12px; border-radius: 10px; 
+        text-decoration: none; font-weight: 600; margin-top: 20px; 
+    }
+    .btn-email-secondary { 
+    display: block; width: 100%; background: #fff; color: #2949CE; 
+    text-align: center; padding: 12px; border-radius: 10px; 
+    text-decoration: none; font-weight: 600; margin-top: 10px; 
+    border: 1px solid #2949CE;
+}
+    
+    .email-footer { margin-top: 30px; text-align: center; font-size: 12px; color: #999; padding-bottom: 30px;}
+    
+    .home-indicator {
+        position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+        width: 130px; height: 5px; background: #000; border-radius: 10px; opacity: 0.2;
+    }
+    
+    .btn-close-phone {
+        position: absolute; top: 15px; right: 15px;
+        background: #eee; border: none; width: 30px; height: 30px;
+        border-radius: 50%; font-size: 20px; cursor: pointer; z-index: 20;
+        display: flex; align-items: center; justify-content: center;
+        color: #333;
+    }   
+    </style>
+
+
+
+
+
     <footer class="site-footer">
         <div class="container"> 
             <div class="footer-text">Trustap Ltd 2026</div>
@@ -135,63 +273,107 @@
     </footer>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // FIX: Using string comparison so VS Code/Linters don't break
-            const isWinner = "{{ 'true' if is_winner else 'false' }}" === "true";
-            const isReserved = new URLSearchParams(window.location.search).get('reserved') === 'true';
+    document.addEventListener("DOMContentLoaded", function() {
+        // 1. Parse the URL Parameters ONCE
+        const urlParams = new URLSearchParams(window.location.search);
+    
+        // 2. Get the variables from the params
+        const isReserved = urlParams.get('reserved') === 'true';
+        const userEmail = urlParams.get('email'); // Gets the email passed from server
+    
+        // 3. Server-side variable for the game
+        const isWinner = "{{ 'true' if is_winner else 'false' }}" === "true";
 
-            if (isReserved) {
-                const btn = document.getElementById('reserve-btn');
-                if (btn) {
-                    btn.innerText = "VEHICLE RESERVED";
-                    btn.className = "btn-primary-brand btn-reserved-state"; 
-                }
+        // --- GLOBAL FUNCTIONS ---
+        window.showDealerModal = function() {
+            const modal = document.getElementById('dealerEmailModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                // Add animation class if not already there
+                const frame = modal.querySelector('.phone-frame');
+                if(frame) frame.classList.add('animate__animated', 'animate__slideInUp');
+            }
+        }
+        window.closeDealerModal = function() {
+            document.getElementById('dealerEmailModal').style.display = 'none';
+        }
+        window.closeModal = function() { // Reservation Checklist Modal
+            const m = document.getElementById('reservationModal');
+            if (m) m.style.display = 'none';
+        }
+        window.closeWinnerModal = function() { 
+            const wm = document.getElementById('winnerModal');
+            if (wm) wm.style.display = 'none';
+            // Ensure banner is visible when winner modal closes
+            const banner = document.getElementById('reserved-banner');
+            if (banner) banner.style.display = 'block';
+        }
 
-                // Only show winner modal if isWinner is true AND the modal exists (feature flag on)
-                if (isWinner) {
-                    const winnerModal = document.getElementById('winnerModal');
-                    if (winnerModal) {
-                        setTimeout(() => { winnerModal.style.display = 'flex'; }, 500);
-                    } else {
-                        // If game is off or error, just show the banner
-                        const banner = document.getElementById('reserved-banner');
-                        if (banner) banner.style.display = 'block';
-                    }
-                } else {
-                    const banner = document.getElementById('reserved-banner');
-                    if (banner) banner.style.display = 'block';
-                }
+        // --- RESERVATION LOGIC ---
+        if (isReserved) {
+            // 1. Show Green Banner
+            const banner = document.getElementById('reserved-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                // Add button to banner to re-open dealer view if needed
+                banner.innerHTML = `
+                    ✓ VEHICLE RESERVED SUCCESSFULLY 
+                    <button onclick="showDealerModal()" style="margin-left:15px; background:none; border:1px solid #fff; color:#fff; border-radius:4px; padding:2px 8px; cursor:pointer; font-size:12px;">
+                        See Dealer View 👁️
+                    </button>
+                `;
+            }
+            if (userEmail) {
+            // Find the specific span in your modal HTML where the email goes
+            // Make sure your HTML has: <span id="customer-email-display">...</span>
+            const emailDisplay = document.getElementById('customer-email-display');
+            if (emailDisplay) emailDisplay.innerText = userEmail;
+        }
+
+            // 2. Lock the Reserve Button
+            const btn = document.getElementById('reserve-btn');
+            if (btn) {
+                btn.innerText = "VEHICLE RESERVED";
+                btn.className = "btn-primary-brand btn-reserved-state"; 
+                btn.style.pointerEvents = 'none';
             }
 
-            const reservationModal = document.getElementById('reservationModal');
-            const mainReserveBtn = document.getElementById('reserve-btn'); 
-            const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+            // 3. UNIVERSAL: Trigger Dealer Email (3 Seconds)
+            // This runs for EVERY reservation
+            setTimeout(() => {
+                window.showDealerModal();
+            }, 3000);
 
-            if (mainReserveBtn) { 
-                mainReserveBtn.addEventListener('click', function(e) {
-                    if (this.innerText.includes("RESERVED")) return;
-                    e.preventDefault(); 
-                    if (modalConfirmBtn) modalConfirmBtn.href = this.getAttribute('href');
-                    if (reservationModal) reservationModal.style.display = 'flex';
-                });
-            }
-
-            window.closeModal = function() { if (reservationModal) reservationModal.style.display = 'none'; }
-            
-            window.closeWinnerModal = function() { 
+            // 4. CONDITIONAL: Trigger Winner Modal (0.5 Seconds)
+            // This ONLY runs if they found the Golden Car
+            if (isWinner) {
                 const winnerModal = document.getElementById('winnerModal');
-                if (winnerModal) winnerModal.style.display = 'none';
-                
-                // Ensure banner shows after closing winner box
-                const banner = document.getElementById('reserved-banner');
-                if (banner) banner.style.display = 'block';
+                // Check if element exists (feature flag might be off)
+                if (winnerModal) {
+                    setTimeout(() => { winnerModal.style.display = 'flex'; }, 500);
+                }
             }
-            
-            window.onclick = function(event) {
-                const winnerModal = document.getElementById('winnerModal');
-                if (event.target == reservationModal) closeModal();
-                if (winnerModal && event.target == winnerModal) closeWinnerModal();
-            }
+        }
+
+        // --- CLICK HANDLERS ---
+        const reservationModal = document.getElementById('reservationModal');
+        const mainReserveBtn = document.getElementById('reserve-btn'); 
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+        if (mainReserveBtn) { 
+            mainReserveBtn.addEventListener('click', function(e) {
+                if (this.innerText.includes("RESERVED")) return;
+                e.preventDefault(); 
+                if (modalConfirmBtn) modalConfirmBtn.href = this.getAttribute('href');
+                if (reservationModal) reservationModal.style.display = 'flex';
+            });
+        }
+
+        window.onclick = function(event) {
+            const winnerModal = document.getElementById('winnerModal');
+            if (event.target == reservationModal) window.closeModal();
+            if (winnerModal && event.target == winnerModal) window.closeWinnerModal();
+         }
         });
     </script>
 </body>

@@ -113,8 +113,8 @@ def reserve():
     except Exception as e:
         logger.error(f"Pardot Error: {e}")
 
-    # C. REDIRECT USER (Mark as reserved)
-    return redirect(f'/items/item_{item_id}.html?reserved=true')
+    # C. REDIRECT USER (Mark as reserved + pass email)
+    return redirect(f'/items/item_{item_id}.html?reserved=true&email={email}')
 
 # --- SUPPORT ROUTES ---
 

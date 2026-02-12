@@ -31,10 +31,23 @@
 
                         <form action="/api/reserve" method="POST">
                             <input type="hidden" name="item_id" value="{{ car.id }}">
+                            
+                           
                             <div class="mb-3">
                                 <label for="email" class="form-label fw-bold text-secondary">Email Address</label>
                                 <input type="email" class="form-control" name="email" placeholder="name@example.com" required>
                             </div>
+                            
+                             <div class="mb-3">
+                                <label class="form-label fw-bold text-secondary">Full Name</label>
+                                <input type="text" class="form-control bg-light" value="Bert Grey" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold text-secondary">Phone Number</label>
+                                <input type="text" class="form-control bg-light" value="+1 212-555-1234" readonly>
+                            </div> 
+
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-secondary">Demo Payment Details</label>
                                 <input type="text" class="form-control bg-light mb-2" placeholder="**** **** **** 1234" disabled>
