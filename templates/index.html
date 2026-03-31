@@ -122,6 +122,79 @@
     }
     </script>
 
+    <div class="bg-light py-5 border-top mt-5">
+    <div class="container">
+        <div class="row g-4">
+            
+            <div class="col-12 col-md-6 text-center px-4 px-md-5">
+                <h6 class="text-muted fw-bold text-uppercase mb-4" style="letter-spacing: 1px; font-size: 12px;">Integrates with:</h6>
+                <div class="d-flex justify-content-center align-items-center" style="height: 80px;">
+                    <img id="integrations-img" src="" alt="Integration Logo" class="rotating-logo" style="max-height: 80px; max-width: 180px; object-fit: contain; display: none;">
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 text-center px-4 px-md-5">
+                <h6 class="text-muted fw-bold text-uppercase mb-4" style="letter-spacing: 1px; font-size: 12px;">Trusted by:</h6>
+                <div class="d-flex justify-content-center align-items-center" style="height: 80px;">
+                    <img id="trusted-img" src="" alt="Dealership Logo" class="rotating-logo" style="max-height: 80px; max-width: 180px; object-fit: contain; display: none;">
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Smooth fade transition for the logos */
+    .rotating-logo {
+        transition: opacity 0.5s ease-in-out;
+        opacity: 1;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Pull the dynamic file lists from Flask into JavaScript
+        const integrations = {{ integration_logos | tojson | safe }};
+        const clients = {{ client_logos | tojson | safe }};
+
+        function setupRotation(imgId, imageList, folder) {
+            const imgElement = document.getElementById(imgId);
+            
+            // If the folder is empty, just leave the image hidden
+            if (!imageList || imageList.length === 0) return;
+            
+            // Show the image element
+            imgElement.style.display = 'block';
+            
+            let currentIndex = 0;
+            // Set the initial image
+            imgElement.src = `/assets/${folder}/${imageList[0]}`;
+            
+            // Only rotate if there is more than 1 image
+            if (imageList.length > 1) {
+                setInterval(() => {
+                    // 1. Fade out
+                    imgElement.style.opacity = 0; 
+                    
+                    // 2. Wait for fade out, swap image, fade in
+                    setTimeout(() => {
+                        currentIndex = (currentIndex + 1) % imageList.length;
+                        // Dynamically pull from the new folder paths
+                        imgElement.src = `/assets/${folder}/${imageList[currentIndex]}`;
+                        imgElement.style.opacity = 1; 
+                    }, 500); // 500ms matches the CSS transition time
+                    
+                }, 2500); // Wait 2 seconds, then take 0.5s to fade = 2.5s total loop
+            }
+        }
+
+        // Pass the exact folder names here so the image source builds correctly
+        setupRotation('integrations-img', integrations, 'integration_logos');
+        setupRotation('trusted-img', clients, 'client_logos');
+    });
+</script>
+
     <footer class="site-footer">
         <div class="container"> 
             <div class="footer-text">Trustap Ltd 2026</div>

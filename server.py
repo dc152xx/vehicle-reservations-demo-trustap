@@ -37,6 +37,25 @@ def load_data():
     with open(json_path) as f:
         return json.load(f)
 
+
+# --- NEW: AUTO-LOAD LOGOS FOR FOOTER ---
+@app.context_processor
+def inject_logos():
+    def get_logos(subfolder):
+        folder_path = os.path.join(static_folder, 'assets', subfolder)
+        # If folder doesn't exist yet, return empty list
+        if not os.path.exists(folder_path):
+            return []
+        # Return only image files
+        return [f for f in os.listdir(folder_path) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))]
+
+    return dict(
+        integration_logos=get_logos('integration_logos'),
+        client_logos=get_logos('client_logos')
+    )
+
+
+
 # ROUTE 1: Homepage (Sets the Hidden Car)
 @app.route('/')
 def index():
